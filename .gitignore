@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# IntelliJ / Android Studio
+*.iml
+.idea/
+# If you want to keep code style settings, remove .idea/codeStyles/
+# If you want to share gradle run configs, remove .idea/runConfigurations/
+
+# Generated files
+.cxx/
+.externalNativeBuild/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Captures
+captures/
+
+# Keystore files (if any, don’t put your signing keys on GitHub!)
+*.jks
+*.keystore

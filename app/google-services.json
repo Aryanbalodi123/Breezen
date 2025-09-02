@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "504884283247",
+    "project_id": "meditationapp-363df",
+    "storage_bucket": "meditationapp-363df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:504884283247:android:ed5f114defd58fe4bbca9a",
+        "android_client_info": {
+          "package_name": "com.example.askquestion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByCw1H0WU0Y5LrF0pbEBoHThWB8GLbY6A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
