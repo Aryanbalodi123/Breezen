@@ -325,7 +325,6 @@ fun FeaturedSection(navController: NavController) {
                         .align(Alignment.TopEnd)   // sticks to top-right
                 )
 
-                // 🔹 Foreground content
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
