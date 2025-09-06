@@ -2,134 +2,153 @@ package com.example.askquestion.ui.screens
 
 import android.content.Context
 import android.util.Log
-import androidx.activity.viewModels
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.interaction.MutableInteractionSource
-
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.palette.graphics.Palette
 import coil.compose.SubcomposeAsyncImage
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.example.askquestion.network.Category
+import com.example.askquestion.network.IMAGE_BUCKET_URL
 import com.example.askquestion.network.RetroFitClient
 import com.example.askquestion.network.SUPABASE_API_KEY_ANON
+import com.example.askquestion.network.Song
+import com.example.askquestion.network.TELEGRAM_BOT_TOKEN
 import com.example.askquestion.network.Tab
+import com.example.askquestion.network.retrieveMusicFile
 import com.example.askquestion.theme.AppColors
 import com.example.askquestion.theme.CustomTypography
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.palette.graphics.Palette
-import coil.compose.AsyncImage
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
-import com.example.askquestion.R
-import com.example.askquestion.network.IMAGE_BUCKET_URL
-import com.example.askquestion.network.Song
-import com.example.askquestion.network.TELEGRAM_BOT_TOKEN
-import com.example.askquestion.network.retrieveMusicFile
-import kotlinx.coroutines.coroutineScope
 
 
-
-class TabViewModel : ViewModel(){
+class TabViewModel : ViewModel() {
 
     enum class RepeatMode {
-        OFF,
-        ALL,
-        ONE
+        OFF, ALL, ONE
     }
 
     var currentSong by mutableStateOf<Song?>(null)
     var filePath by mutableStateOf("")
     private val _tabs = mutableStateOf<List<Tab>>(emptyList())
-    val tabs: State<List<Tab>> =_tabs
+    val tabs: State<List<Tab>> = _tabs
     private val _categories = mutableStateOf<Map<String, List<Category>>>(emptyMap())
     val categories: State<Map<String, List<Category>>> = _categories
 
-    private val _songs = mutableStateOf<Map<String,List<Song>>>(emptyMap())
+    private val _songs = mutableStateOf<Map<String, List<Song>>>(emptyMap())
     val songs: State<Map<String, List<Song>>> = _songs
 
-    val songCache = mutableMapOf<String , List<Song>>()
+    val songCache = mutableMapOf<String, List<Song>>()
 
     var isPlaying by mutableStateOf(false)
     var isShuffleEnabled by mutableStateOf(false)
     var repeatMode: RepeatMode by mutableStateOf(RepeatMode.OFF)
 
-    fun fetchTabsCategory(){
+    fun fetchTabsCategory() {
         viewModelScope.launch {
             val resultTab = RetroFitClient.api.getTabs(
-                apiKey = SUPABASE_API_KEY_ANON,
-                authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                apiKey = SUPABASE_API_KEY_ANON, authorization = "Bearer $SUPABASE_API_KEY_ANON"
             )
-            _tabs.value= resultTab
+            _tabs.value = resultTab
 
             val resultCategory = RetroFitClient.api.getCategories(
-                apiKey = SUPABASE_API_KEY_ANON,
-                authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                apiKey = SUPABASE_API_KEY_ANON, authorization = "Bearer $SUPABASE_API_KEY_ANON"
             )
-            _categories.value = resultCategory.groupBy{it.tab_id} // It will group all the categories to their tab id
+            _categories.value =
+                resultCategory.groupBy { it.tab_id } // It will group all the categories to their tab id
 
             Log.d("TabsViewModel", "Fetched category: $resultCategory")
 
             val resultSong = RetroFitClient.api.getSongs(
-                apiKey = SUPABASE_API_KEY_ANON,
-                authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                apiKey = SUPABASE_API_KEY_ANON, authorization = "Bearer $SUPABASE_API_KEY_ANON"
             )
-            _songs.value = resultSong.groupBy{it.category_id} // It will group all the categories to their category id
+            _songs.value =
+                resultSong.groupBy { it.category_id } // It will group all the categories to their category id
 
             Log.d("TabsViewModel", "Fetched song: $resultSong")
         }
     }
-    fun setCurrentSong(context:Context, song: Song , musicFilePath:String){
+
+    fun setCurrentSong(context: Context, song: Song, musicFilePath: String) {
         currentSong = song
-        Log.d("Song set" , song.toString())
+        Log.d("Song set", song.toString())
         filePath = musicFilePath
-        Log.d("file path set" , filePath)
+        Log.d("file path set", filePath)
 
     }
 
@@ -137,19 +156,18 @@ class TabViewModel : ViewModel(){
 }
 
 @Composable
-fun MusicScreen(viewModel: TabViewModel = viewModel(),
+fun MusicScreen(
+    viewModel: TabViewModel = viewModel(),
     navController: NavController,
 
-) {
+    ) {
     val tabs by viewModel.tabs
     val categories by viewModel.categories
     val songs by viewModel.songs
-    var isLoading by remember { mutableStateOf(true) }
     var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     var selectedCategoryIndex by rememberSaveable { mutableStateOf(0) }
 
-
-    LaunchedEffect (Unit){
+    LaunchedEffect(Unit) {
         viewModel.fetchTabsCategory()
     }
 
@@ -160,10 +178,8 @@ fun MusicScreen(viewModel: TabViewModel = viewModel(),
     }
     val currentCategories = categories[currentTab?.id]
 
-    LaunchedEffect(Unit) {
-        delay(1000)
-        isLoading = false
-    }
+    val isLoading = tabs.isEmpty() || categories.isEmpty() || songs.isEmpty()
+
 
     val backgroundGradient = remember {
         Brush.verticalGradient(
@@ -183,8 +199,7 @@ fun MusicScreen(viewModel: TabViewModel = viewModel(),
     ) {
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -216,17 +231,14 @@ fun MusicScreen(viewModel: TabViewModel = viewModel(),
                 HeaderSection(
                     onBackClick = {
                         navController.popBackStack()
-                    }
-                )
+                    })
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 TabButtonRow(
-                    tabs = tabs,
-                    selectedIndex = selectedTabIndex,
-                    onTabSelected = { selectedTabIndex = it
-                  }
-                )
+                    tabs = tabs, selectedIndex = selectedTabIndex, onTabSelected = {
+                        selectedTabIndex = it
+                    })
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -234,26 +246,24 @@ fun MusicScreen(viewModel: TabViewModel = viewModel(),
                     CategoryFilterChips(
                         categories = currentCategories,
                         selectedIndex = selectedCategoryIndex,
-                        onCategorySelected = { selectedCategoryIndex = it
-                     }
-                    )
+                        onCategorySelected = {
+                            selectedCategoryIndex = it
+                        })
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                if (currentCategories != null ){
-                    
-                            if (songs.isNotEmpty() ) {
-                                songs[currentCategories[selectedCategoryIndex].id]?.let {
-                                    MusicItemsGrid(
-                                        items = it,
-                                        navController = navController,
-                                        viewModel = viewModel
-                                    )
+                if (currentCategories != null) {
+
+                    if (songs.isNotEmpty()) {
+                        songs[currentCategories[selectedCategoryIndex].id]?.let {
+                            MusicItemsGrid(
+                                items = it, navController = navController, viewModel = viewModel
+                            )
 
 
-                                }
-                            }
+                        }
+                    }
 
                 }
             }
@@ -264,8 +274,7 @@ fun MusicScreen(viewModel: TabViewModel = viewModel(),
 @Composable
 private fun EmptyStateMessage(message: String) {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Text(
             text = message,
@@ -300,11 +309,8 @@ fun LoadingPillsIndicator(
                 targetValue = maxHeight.value,
                 animationSpec = infiniteRepeatable(
                     animation = tween(
-                        durationMillis = animationDuration,
-                        easing = FastOutSlowInEasing
-                    ),
-                    repeatMode = RepeatMode.Reverse,
-                    initialStartOffset = StartOffset(
+                        durationMillis = animationDuration, easing = FastOutSlowInEasing
+                    ), repeatMode = RepeatMode.Reverse, initialStartOffset = StartOffset(
                         offsetMillis = (animationDuration / pillCount) * index
                     )
                 ),
@@ -316,8 +322,7 @@ fun LoadingPillsIndicator(
                     .width(pillWidth)
                     .height(animatedHeight.dp)
                     .background(
-                        color = pillColor,
-                        shape = RoundedCornerShape(pillWidth / 2)
+                        color = pillColor, shape = RoundedCornerShape(pillWidth / 2)
                     )
                     .shadow(
                         elevation = 2.dp,
@@ -336,12 +341,9 @@ private fun HeaderSection(
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "backButtonScale"
+        targetValue = if (isPressed) 0.95f else 1f, animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium
+        ), label = "backButtonScale"
     )
 
     val headerAlpha by animateFloatAsState(
@@ -369,12 +371,13 @@ private fun HeaderSection(
                     color = AppColors.PrimaryGreen.copy(alpha = 0.3f),
                     shape = CircleShape
                 )
-                .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) {
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(),
+                ) {
                     isPressed = true
                     onBackClick()
-                }
-        ) {
+                }) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
@@ -405,9 +408,7 @@ private fun HeaderSection(
 
 @Composable
 fun TabButtonRow(
-    tabs: List<Tab>,
-    selectedIndex: Int,
-    onTabSelected: (Int) -> Unit
+    tabs: List<Tab>, selectedIndex: Int, onTabSelected: (Int) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -420,34 +421,35 @@ fun TabButtonRow(
             TabItem(
                 title = tab.name,
                 isSelected = index == selectedIndex,
-                onClick = { onTabSelected(index) }
-            )
+                onClick = { onTabSelected(index) })
         }
     }
 }
 
 @Composable
 private fun TabItem(
-    title: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
+    title: String, isSelected: Boolean, onClick: () -> Unit
 ) {
     val animatedColor by animateColorAsState(
         targetValue = if (isSelected) AppColors.PrimaryGreen else AppColors.TextSecondary,
-        animationSpec = tween(300), label = "tabTextColor"
+        animationSpec = tween(300),
+        label = "tabTextColor"
     )
 
     val underlineWidth by animateDpAsState(
         targetValue = if (isSelected) 24.dp else 0.dp,
-        animationSpec = tween(300), label = "underlineAnim"
+        animationSpec = tween(300),
+        label = "underlineAnim"
     )
 
     Column(
         modifier = Modifier
-            .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),onClick = onClick)
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+                onClick = onClick
+            )
+            .padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = title,
@@ -471,9 +473,7 @@ private fun TabItem(
 
 @Composable
 private fun CategoryFilterChips(
-    categories: List<Category>,
-    selectedIndex: Int,
-    onCategorySelected: (Int) -> Unit
+    categories: List<Category>, selectedIndex: Int, onCategorySelected: (Int) -> Unit
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -481,32 +481,24 @@ private fun CategoryFilterChips(
         modifier = Modifier.fillMaxWidth()
     ) {
         items(
-            count = categories.size,
-            key = { index -> categories[index].name }
-        ) { index ->
+            count = categories.size, key = { index -> categories[index].name }) { index ->
             EnhancedCategoryFilterChip(
                 text = categories[index].name,
                 isSelected = selectedIndex == index,
-                onClick = { onCategorySelected(index) }
-            )
+                onClick = { onCategorySelected(index) })
         }
     }
 }
 
 @Composable
 private fun EnhancedCategoryFilterChip(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
+    text: String, isSelected: Boolean, onClick: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "categoryChipScale"
+        targetValue = if (isPressed) 0.95f else 1f, animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh
+        ), label = "categoryChipScale"
     )
 
     val backgroundColor by animateColorAsState(
@@ -514,9 +506,7 @@ private fun EnhancedCategoryFilterChip(
             Color(0xFF0F3A2F)
         } else {
             Color(0xFF161616)
-        },
-        animationSpec = tween(300),
-        label = "categoryChipBackground"
+        }, animationSpec = tween(300), label = "categoryChipBackground"
     )
 
     val textColor by animateColorAsState(
@@ -524,9 +514,7 @@ private fun EnhancedCategoryFilterChip(
             AppColors.PrimaryGreen
         } else {
             AppColors.TextTertiary
-        },
-        animationSpec = tween(300),
-        label = "categoryChipText"
+        }, animationSpec = tween(300), label = "categoryChipText"
     )
 
     val borderColor by animateColorAsState(
@@ -534,9 +522,7 @@ private fun EnhancedCategoryFilterChip(
             AppColors.PrimaryGreen.copy(alpha = 0.6f)
         } else {
             Color(0xFF2A2A2A)
-        },
-        animationSpec = tween(300),
-        label = "categoryChipBorder"
+        }, animationSpec = tween(300), label = "categoryChipBorder"
     )
 
     Surface(
@@ -545,16 +531,15 @@ private fun EnhancedCategoryFilterChip(
         modifier = Modifier
             .scale(scale)
             .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(20.dp)
+                width = 1.dp, color = borderColor, shape = RoundedCornerShape(20.dp)
             )
-            .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) {
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+            ) {
                 isPressed = true
                 onClick()
-            }
-    ) {
+            }) {
         Box(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
@@ -579,9 +564,7 @@ private fun EnhancedCategoryFilterChip(
 
 @Composable
 fun MusicItemsGrid(
-    items: List<Song>,
-    navController: NavController,
-    viewModel: TabViewModel = viewModel()
+    items: List<Song>, navController: NavController, viewModel: TabViewModel = viewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -606,57 +589,47 @@ fun MusicItemsGrid(
                 onClick = {
                     coroutineScope.launch {
                         val musicFilePath = retrieveMusicFile(
-                            context,
-                            TELEGRAM_BOT_TOKEN,
-                            musicItem.stream_id
+                            context, TELEGRAM_BOT_TOKEN, musicItem.stream_id
                         )
 
                         if (musicFilePath != null) {
                             viewModel.setCurrentSong(context, musicItem, musicFilePath)
                             navController.navigate("player")
                         } else {
-                            Log.e("MusicItemsGrid", "Failed to fetch music file for ${musicItem.title}")
+                            Log.e(
+                                "MusicItemsGrid",
+                                "Failed to fetch music file for ${musicItem.title}"
+                            )
                             // Optionally show a snackbar / toast
                         }
                     }
-                }
-            )
+                })
         }
     }
 }
 
 @Composable
 fun MusicItemCard(
-    musicItem: Song,
-    viewModel: TabViewModel, // Remove the default parameter
-    isLoaded: Boolean,
-    onImageLoaded: (() -> Unit)? = null,
-    onClick: () -> Unit
+    musicItem: Song, viewModel: TabViewModel, // Remove the default parameter
+    isLoaded: Boolean, onImageLoaded: (() -> Unit)? = null, onClick: () -> Unit
 ) {
     val context = LocalContext.current
     var dominantColor by remember { mutableStateOf(Color(0xFF444444)) }
 
     // Pop animation when item loads
     val scale by animateFloatAsState(
-        targetValue = if (isLoaded) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "popScale"
+        targetValue = if (isLoaded) 1f else 0f, animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium
+        ), label = "popScale"
     )
 
     val alpha by animateFloatAsState(
-        targetValue = if (isLoaded) 1f else 0f,
-        animationSpec = tween(300),
-        label = "popAlpha"
+        targetValue = if (isLoaded) 1f else 0f, animationSpec = tween(300), label = "popAlpha"
     )
 
     LaunchedEffect(musicItem.id) {
-        val request = ImageRequest.Builder(context)
-            .data(IMAGE_BUCKET_URL + musicItem.id + ".webp")
-            .allowHardware(false)
-            .build()
+        val request = ImageRequest.Builder(context).data(IMAGE_BUCKET_URL + musicItem.id + ".webp")
+            .allowHardware(false).build()
         val result = (context.imageLoader.execute(request) as? SuccessResult)?.drawable
         result?.let { drawable ->
             Palette.from(drawable.toBitmap()).generate { palette ->
@@ -673,19 +646,16 @@ fun MusicItemCard(
             .scale(scale)
             .graphicsLayer { this.alpha = alpha }
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple()
+                interactionSource = remember { MutableInteractionSource() }, indication = ripple()
             ) { if (isLoaded) onClick() }
             .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+        horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(180.dp)
                 .aspectRatio(1f)
                 .clip(CircleShape)
-                .background(Color.Black),
-            contentAlignment = Alignment.Center
+                .background(Color.Black), contentAlignment = Alignment.Center
         ) {
             // Record rings
             Canvas(modifier = Modifier.size(180.dp)) {
@@ -701,8 +671,7 @@ fun MusicItemCard(
                     brush = Brush.radialGradient(
                         colors = listOf(dominantColor.copy(alpha = 0.4f), Color.Transparent),
                         radius = radius * 0.9f
-                    ),
-                    radius = radius * 0.9f
+                    ), radius = radius * 0.9f
                 )
             }
 
@@ -716,8 +685,7 @@ fun MusicItemCard(
                 contentScale = ContentScale.Crop,
                 onSuccess = {
                     onImageLoaded?.invoke()
-                }
-            )
+                })
         }
 
         Spacer(modifier = Modifier.height(12.dp))

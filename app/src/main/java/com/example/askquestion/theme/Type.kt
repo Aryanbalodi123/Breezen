@@ -9,13 +9,25 @@ import androidx.compose.ui.unit.sp
 import com.example.askquestion.R
 
 val DMSansFontFamily = FontFamily(
+    Font(R.font.dmsans_thin, FontWeight.Thin),
+    Font(R.font.dmsans_light, FontWeight.Light),
+
     Font(R.font.dmsans_regular, FontWeight.Normal),
     Font(R.font.dmsans_semibold, FontWeight.SemiBold),
     Font(R.font.dmsans_bold, FontWeight.Bold)
 )
+val FunnelDisplayFamily = FontFamily(
+    Font(R.font.funneldisplay_regular, FontWeight.Normal),
+
+)
+val InstrumentalSerifFamily = FontFamily(
+    Font(R.font.instrument_regular, FontWeight.Normal),
+
+    )
 
 // Define custom typography
 val CustomTypography = Typography(
+
     displayLarge = TextStyle(
         fontFamily = DMSansFontFamily,
         fontWeight = FontWeight.Bold,
@@ -26,6 +38,7 @@ val CustomTypography = Typography(
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp
     ),
+
     headlineLarge = TextStyle(
         fontFamily = DMSansFontFamily,
         fontWeight = FontWeight.Bold,

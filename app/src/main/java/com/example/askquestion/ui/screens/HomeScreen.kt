@@ -1,17 +1,15 @@
 package com.example.askquestion.ui.screens
 
-import com.example.askquestion.R
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,40 +17,44 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.IconButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.askquestion.R
 import com.example.askquestion.theme.AppColors
 import com.example.askquestion.theme.CustomTypography
+import com.example.askquestion.theme.FunnelDisplayFamily
+import com.example.askquestion.theme.gradientBackground
 
 
 @Stable
@@ -73,427 +75,507 @@ fun AppBackground(): Brush {
 }
 
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun HomeContent(navController: NavController) {
-    // Create sound items data once with unique IDs
-    val soundItems = remember {
-        listOf(
-            SoundData(1, "Ocean Waves", "Natural water sounds", "32 min", AppColors.LightGreen),
-            SoundData(2, "Rainfall", "Gentle rain drops", "45 min", AppColors.PrimaryGreen),
-            SoundData(3, "Heavy Rain", "Deep rain sounds", "45 min", AppColors.PrimaryGreen),
-            SoundData(4, "Light Rain", "Soft rain drops", "45 min", AppColors.PrimaryGreen),
-            SoundData(5, "Thunder Storm", "Rain with thunder", "45 min", AppColors.PrimaryGreen),
-            SoundData(6, "Forest Birds", "Morning bird songs", "28 min", AppColors.Yellow),
-            SoundData(7, "Light Rain", "Soft rain drops", "45 min", AppColors.PrimaryGreen),
-            SoundData(8, "Thunder Storm", "Rain with thunder", "45 min", AppColors.PrimaryGreen),
-            SoundData(9, "Forest Birds", "Morning bird songs", "28 min", AppColors.Yellow),
-            SoundData(10, "Forest Birds", "Morning bird songs", "28 min", AppColors.Yellow),
-            SoundData(11, "Light Rain", "Soft rain drops", "45 min", AppColors.PrimaryGreen),
-            SoundData(12, "Thunder Storm", "Rain with thunder", "45 min", AppColors.PrimaryGreen),
-            SoundData(13, "Forest Birds", "Morning bird songs", "28 min", AppColors.Yellow)
-        )
-    }
-    Box(modifier = Modifier.fillMaxSize()) {
-        val backgroundBrush = AppBackground()
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(brush = backgroundBrush)
-        )
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 120.dp)
-    ) {
-        Spacer(modifier = Modifier.height(40.dp))
 
-        HeaderSection()
-        Spacer(modifier = Modifier.height(28.dp))
-
-        CategoriesSection()
-        Spacer(modifier = Modifier.height(28.dp))
-
-        FeaturedSection(navController)
-        Spacer(modifier = Modifier.height(28.dp))
-
-        PopularSoundsHeader(onSeeAllClick = { /* Handle see all */ })
-        Spacer(modifier = Modifier.height(16.dp))
-
-        soundItems.forEach { soundData ->
-            OptimizedSoundItem(
-                soundData = soundData,
-                onClick = { null }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-    }}
-}
-
-@Stable
-data class SoundData(
-    val id: Int,
-    val title: String,
-    val subtitle: String,
-    val duration: String,
-    val color: Color
-)
-
-@Composable
-fun HeaderSection() {
-        val headerTextStyle = remember { CustomTypography.headlineLarge }
-        val subTextStyle = remember { CustomTypography.bodyMedium }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                text = "Good Morning",
-                style = subTextStyle,
-                color = AppColors.TextSecondary
-            )
-            Text(
-                text = "Aryan",
-                style = headerTextStyle,
-                color = AppColors.TextPrimary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-
-        val buttonColors = remember {
-            ButtonColors(
-                background = AppColors.GlassBackground,
-                border = AppColors.GlassBorder
-            )
-        }
-
-        IconButton(
-            onClick = { /* Handle notification */ },
-            modifier = Modifier
-                .size(48.dp)
-                .background(
-                    color = buttonColors.background,
-                    shape = CircleShape
-                )
-                .border(
-                    width = 1.dp,
-                    color = buttonColors.border,
-                    shape = CircleShape
-                )
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Notifications,
-                contentDescription = "Notifications",
-                tint = AppColors.TextPrimary,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-}
-
-@Stable
-data class ButtonColors(
-    val background: Color,
-    val border: Color
-)
-
-@Composable
-fun CategoriesSection() {
-    val categories = remember {
-        listOf(
-            CategoryData("Sleep", AppColors.PrimaryGreen),
-            CategoryData("Focus", AppColors.Yellow),
-            CategoryData("Relax", AppColors.LightGreen),
-            CategoryData("Meditate", AppColors.DarkGreen)
-        )
-    }
-
-    Column {
-        Text(
-            text = "Categories",
-            style = CustomTypography.titleLarge,
-            color = AppColors.TextPrimary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
-        ) {
-            items(
-                items = categories,
-                key = { it.name }
-            ) { categoryData ->
-                CategoryChip(categoryData)
-            }
-        }
-    }
-}
-
-@Stable
-data class CategoryData(
-    val name: String,
-    val color: Color
-)
-
-@Composable
-fun CategoryChip(categoryData: CategoryData) {
-    val chipStyling = remember(categoryData.color) {
-        ChipStyling(
-            background = AppColors.CardBackground,
-            border = categoryData.color.copy(alpha = 0.3f),
-            textColor = categoryData.color,
-            shape = RoundedCornerShape(25.dp)
-        )
-    }
 
     Box(
         modifier = Modifier
-            .clip(chipStyling.shape)
-            .background(chipStyling.background)
-            .border(
-                width = 1.dp,
-                color = chipStyling.border,
-                shape = chipStyling.shape
-            )
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication =ripple(
-        bounded = true,   // ripple stays inside bounds
-        radius = 24.dp
-    )) { }
+            .fillMaxSize()
+            .background(Color.Black)
     ) {
-        Text(
-            text = categoryData.name,
-            style = CustomTypography.bodyMedium,
-            color = chipStyling.textColor,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
 
-@Stable
-data class ChipStyling(
-    val background: Color,
-    val border: Color,
-    val textColor: Color,
-    val shape: RoundedCornerShape
-)
-
-@Composable
-fun FeaturedSection(navController: NavController) {
-    val featuredStyling = remember {
-        FeaturedStyling(
-            gradient = Brush.horizontalGradient(
-                colors = listOf(
-                    AppColors.PrimaryGreen.copy(alpha = 0.1f),
-                    AppColors.LightGreen.copy(alpha = 0.05f)
-                )
-            ),
-            border = AppColors.PrimaryGreen.copy(alpha = 0.2f),
-            shape = RoundedCornerShape(24.dp)
-        )
-    }
-
-//    }
 
         Column(
             modifier = Modifier
-                .height(400.dp)
-                .fillMaxWidth()
-                .background(Color(0xFF012f46))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp)
-            ) {
-                // 🔹 Background circle pinned to top-right
-                Image(
-                    painter = painterResource(R.drawable.gradient_circles),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(200.dp)              // adjust size to your liking
-                        .align(Alignment.TopEnd)   // sticks to top-right
-                )
+                .fillMaxSize()
+                .padding(vertical = 16.dp)
+                .verticalScroll(rememberScrollState())
 
-                Column(
+
+
+        ) {
+
+            Row(Modifier
+                .fillMaxWidth()
+                .height(50.dp)) {
+                Text(
+                    "Breezen",
+                    color = Color.White,
+                    style = CustomTypography.titleLarge.copy(
+                        fontFamily = FunnelDisplayFamily,
+                        fontWeight = FontWeight.Normal,
+                        letterSpacing = 1.sp
+                    )
+                )
+                Spacer(Modifier.weight(1f))
+                Button(
+                    modifier = Modifier.size(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ), onClick = { null }) {
+                    Icon(
+                        painter = painterResource(R.drawable.heart),
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+
+         HeaderSection()
+
+            Spacer(modifier = Modifier.height(28.dp))
+//            Text("“If you want something done right, do it yourself.”", style = CustomTypography.displayMedium.copy(fontFamily = InstrumentalSerifFamily, fontSize = 36.sp), modifier=Modifier.padding(horizontal = 16.dp), color = Color.White)
+            Spacer(modifier = Modifier.height(28.dp))
+
+
+            FeaturedSection(navController)
+            Spacer(modifier = Modifier.height(28.dp))
+
+
+
+            ChatBot()
+            Spacer(modifier = Modifier.height(28.dp))
+
+
+        }
+    }
+}
+
+
+@Composable
+fun HeaderSection() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(400.dp)
+            .clip(shape = RoundedCornerShape(bottomEnd = 120.dp))
+    ) {
+        Row {
+            repeat(5) {
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        "10:00 min",
-                        color = Color.White,
-                        modifier = Modifier.background(
-                            Color.White.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(6.dp)
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .gradientBackground(
+                            listOf(
+                                Color.Black,
+                                Color.Black,
+                                Color.Black,
+
+                                Color(0xFF294577),
+                                Color(0xFF91658f),
+                                Color(0xFFc8b2c7)
+
+                            ), angle = 45f
                         )
+                )
+            }
+        }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                "GOOD MORNING ARYAN",
+                style = CustomTypography.bodySmall.copy(
+                    letterSpacing = 2.sp,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color.White
+            )
+            Text(
+                "Await Rain",
+                style = CustomTypography.displayMedium.copy(
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 2.sp,
+                    fontSize = 48.sp
+                ),
+                color = Color.White
+            )
+            Text(
+                "FOREST AMBIENCE",
+                style = CustomTypography.bodySmall.copy(
+
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
+                    fontSize = 12.sp
+                ),
+                color = Color.White
+            )
+
+            Text(
+                "15 MIN",
+                style = CustomTypography.bodySmall.copy(
+                    letterSpacing = 2.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                ),
+                color = Color.White
+            )
+            Spacer(Modifier.height(24.dp))
+            IconButton(
+                onClick = { /* handle send */ },
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                      Color.White
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Quiet Flight",
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineMedium
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.play),
+                    modifier = Modifier.size(22.dp),
+                    contentDescription = "Send",
+                    tint = Color.Black
+                )
+            }
+        }
+
+
+    }
+
+
+}
+
+
+
+
+
+
+@Composable
+fun FeaturedSection(navController: NavController) {
+
+
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            FeatureSectionCard1()
+        }
+        item {
+            FeatureSectionCard2()
+        }
+
+
+    }
+
+}
+
+
+
+@Composable
+fun FeatureSectionCard1() {
+    Column(
+        modifier = Modifier
+            .height(350.dp)
+            .width(250.dp)
+            .clip(shape = RoundedCornerShape(16.dp))
+
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFF012f46), Color(0xFF00090e), Color.Black),
+                    start = Offset(0f, 0f),
+                    end = Offset(1000f, 1000f)
+                )
+            )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+
+
+        ) {
+            Image(
+                painter = painterResource(R.drawable.gradient_circles),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+
+                    .size(250.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 50.dp)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "10:00 min",
+                    color = Color.White,
+                    style = CustomTypography.titleSmall,
+
+                    modifier = Modifier
+                        .background(
+                            Color.White.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(10.dp)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    "Quiet Flight",
+                    color = Color.White,
+                    style = CustomTypography.bodyLarge.copy(
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Thin
+                    ),
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Take a journey through quiet sanctuary and blissful resonance",
+                    color = Color.White.copy(alpha = 0.8f),
+                    style = CustomTypography.bodySmall.copy(fontSize = 14.sp),
+
                     )
-                    Text(
-                        "Take a journey through quiet sanctuary and blissful resonance",
-                        color = Color.White.copy(alpha = 0.8f)
+                Spacer(Modifier.height(10.dp))
+                IconButton(
+                    onClick = { /* handle send */ },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFF012f46), Color(0xFF07a796))
+                            )
+                        )
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.play),
+                        modifier = Modifier.size(22.dp),
+                        contentDescription = "Send",
+                        tint = Color.Black
                     )
                 }
             }
         }
-
-
-
-
-}
-
-@Stable
-data class FeaturedStyling(
-    val gradient: Brush,
-    val border: Color,
-    val shape: RoundedCornerShape
-)
-
-@Composable
-fun PopularSoundsHeader(onSeeAllClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Popular Sounds",
-            style = CustomTypography.titleLarge,
-            color = AppColors.TextPrimary,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            text = "See all",
-            style = CustomTypography.bodyMedium,
-            color = AppColors.PrimaryGreen,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onSeeAllClick() }
-        )
     }
 }
 
 @Composable
-fun OptimizedSoundItem(
-    soundData: SoundData,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val itemStyling = remember(soundData.color) {
-        SoundItemStyling(
-            iconBackground = soundData.color.copy(alpha = 0.1f),
-            iconBorder = soundData.color.copy(alpha = 0.3f),
-            cardBorder = soundData.color.copy(alpha = 0.2f),
-            iconTint = soundData.color,
-            playTint = soundData.color,
-            cardShape = RoundedCornerShape(16.dp),
-            iconShape = RoundedCornerShape(12.dp)
-        )
-    }
-
-    val titleStyle = remember { CustomTypography.bodyLarge }
-    val subtitleStyle = remember { CustomTypography.bodySmall }
-    val durationStyle = remember { CustomTypography.bodySmall }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(itemStyling.cardShape)
-            .background(AppColors.CardBackground)
-            .border(
-                width = 1.dp,
-                color = itemStyling.cardBorder,
-                shape = itemStyling.cardShape
+fun FeatureSectionCard2() {
+    Column(
+        modifier = Modifier
+            .height(350.dp)
+            .width(250.dp)
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFdde46f),
+                        Color(0xFF68a095),
+                        Color(0xFF21366d),
+                        Color(0xFF111333)
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(1000f, 1000f)
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
-            .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(itemStyling.iconShape)
-                .background(itemStyling.iconBackground)
-                .border(
-                    width = 1.dp,
-                    color = itemStyling.iconBorder,
-                    shape = itemStyling.iconShape
-                ),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.fillMaxSize()
         ) {
-            Icon(
-                imageVector = Icons.Filled.MusicNote,
-                contentDescription = "Sound",
-                tint = itemStyling.iconTint,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+            // Images positioned absolutely to break out of padding constraints
+            Row(
+                horizontalArrangement = Arrangement.spacedBy((-50).dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .wrapContentWidth(Alignment.End)
+                    .offset(x = 16.dp) // Move beyond the right padding
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.yellow_blue_gradient),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .graphicsLayer(rotationY = 45f)
+                )
 
-        Spacer(modifier = Modifier.width(16.dp))
+                Image(
+                    painter = painterResource(R.drawable.yellow_blue_gradient),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .graphicsLayer(rotationY = 45f)
+                )
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = soundData.title,
-                style = titleStyle,
-                color = AppColors.TextPrimary,
-                fontWeight = FontWeight.SemiBold
-            )
+                Image(
+                    painter = painterResource(R.drawable.yellow_blue_gradient),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .size(190.dp)
+                        .graphicsLayer(rotationY = 45f)
+                )
+            }
 
-            Text(
-                text = soundData.subtitle,
-                style = subtitleStyle,
-                color = AppColors.TextSecondary,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "10:00 min",
+                    color = Color.White,
+                    style = CustomTypography.titleSmall,
+                    modifier = Modifier
+                        .background(
+                            Color.White.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(10.dp)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    "Quiet Flight",
+                    color = Color.White,
+                    style = CustomTypography.bodyLarge.copy(
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Thin
+                    ),
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Take a journey through quiet sanctuary and blissful resonance",
+                    color = Color.White.copy(alpha = 0.8f),
 
-        Column(
-            horizontalAlignment = Alignment.End
-        ) {
-            Text(
-                text = soundData.duration,
-                style = durationStyle,
-                color = AppColors.TextSecondary
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Icon(
-                imageVector = Icons.Filled.PlayArrow,
-                contentDescription = "Play",
-                tint = itemStyling.playTint,
-                modifier = Modifier.size(20.dp)
-            )
+                    style = CustomTypography.bodySmall.copy(fontSize = 14.sp),
+                )
+                Spacer(Modifier.height(10.dp))
+                IconButton(
+                    onClick = { /* handle send */ },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(           Color(0xFFdde46f),
+                                    Color(0xFF68a095),)
+                            )
+                        )
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.play),
+                        modifier = Modifier.size(22.dp),
+                        contentDescription = "Send",
+                        tint = Color.Black
+                    )
+                }
+            }
         }
     }
 }
 
-@Stable
-data class SoundItemStyling(
-    val iconBackground: Color,
-    val iconBorder: Color,
-    val cardBorder: Color,
-    val iconTint: Color,
-    val playTint: Color,
-    val cardShape: RoundedCornerShape,
-    val iconShape: RoundedCornerShape
-)
+@SuppressLint("ConfigurationScreenWidthHeight")
+@Composable
+fun ChatBot() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(400.dp)
+            .padding(16.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.Black) // true black base
+    ) {
+        // Emitting effect behind mandala
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF3A9F8F).copy(alpha = 0.4f), // teal glow
+                            Color.Transparent
+                        ),
+                        radius = 600f
+                    )
+                )
+        )
+
+        // 🌿 Welcome meditation text
+        Text(
+            text = "How are you feeling today?",
+            color = Color.White.copy(alpha = 0.85f),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 24.dp),
+        )
+
+        // Mandala in the center
+        Image(
+            painter = painterResource(R.drawable.chatbot_background),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(150.dp),
+            contentScale = ContentScale.Fit,
+            colorFilter = ColorFilter.tint(Color.White.copy(alpha = 0.7f))
+        )
+
+        // Bottom textbox + send button (Glass style)
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(16.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Color.White.copy(alpha = 0.08f)) // glass transparency
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(50)
+                )
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            var inputText by remember { mutableStateOf("") }
+
+            BasicTextField(
+                value = inputText,
+                onValueChange = { inputText = it },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                cursorBrush = SolidColor(Color.White),
+                decorationBox = { innerTextField ->
+                    if (inputText.isEmpty()) {
+                        Text("Type your thoughts...", color = Color.Gray)
+                    }
+                    innerTextField()
+                }
+            )
+
+            IconButton(
+                onClick = { /* handle send */ },
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(Color(0xFF3A9F8F), Color(0xFF66E6C9))
+                        )
+                    )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.play),
+                    modifier = Modifier.size(22.dp),
+                    contentDescription = "Send",
+                    tint = Color.Black
+                )
+            }
+        }
+    }
+}

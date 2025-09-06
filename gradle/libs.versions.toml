@@ -56,6 +56,10 @@ retrofit = "2.11.0"
 retrofitVersion = "2.9.0"
 animationCore = "1.9.0"
 material3Version = "1.3.2"
+uiGraphics = "1.9.0"
+foundationLayout = "1.9.0"
+uiText = "1.9.0"
+uiGeometry = "1.9.0"
 
 [libraries]
 # Core AndroidX
@@ -139,6 +143,10 @@ ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
 androidx-compose-material3-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Version" }
+androidx-compose-ui-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
+androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
+androidx-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
+androidx-ui-geometry = { group = "androidx.compose.ui", name = "ui-geometry", version.ref = "uiGeometry" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

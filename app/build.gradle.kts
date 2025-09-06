@@ -121,6 +121,10 @@ dependencies {
     implementation(libs.androidx.foundation.android)
     implementation(libs.androidx.animation.core)
     implementation(libs.androidx.compose.material3.material3)
+    implementation(libs.androidx.compose.ui.ui.graphics)
+    implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.ui.text)
+    implementation(libs.androidx.ui.geometry)
 
     // Testing
     testImplementation(libs.junit)
