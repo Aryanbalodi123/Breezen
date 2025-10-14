@@ -1,172 +1,186 @@
-package com.example.askquestion.ui.screens
+package com.example.galaxyanimation
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.example.askquestion.R
-import com.example.askquestion.theme.CustomTypography
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 
-@Composable
-fun SplashScreen(
-    navController: NavController,
-    onOnboardingComplete: () -> Unit
-) {
-    val screenItems = listOf(
-        listOf(1, R.drawable.splash_1, "Enter a\nCalm Space"),
-        listOf(2, R.drawable.splash_2, "Controlled Breath,\nClear Mind"),
-        listOf(3, R.drawable.splash_3, "Achieve\nDaily Balance"),
-        listOf(4, R.drawable.splash_4, "Enhance\nSleep Quality")
+// -------------------------------------------------------------
+// 🎨 Shape Type Enum
+// -------------------------------------------------------------
+enum class ShapeType {
+    FILLED_CIRCLE,
+    OUTLINED_CIRCLE,
+    RHOMBUS
+}
+
+// -------------------------------------------------------------
+// 🌌 Orbiting Shape Data
+// -------------------------------------------------------------
+data class OrbitingShape(
+    val color: Color,
+    val radius: Float,
+    val size: Float,
+    val speedMultiplier: Float,
+    val shapeType: ShapeType,
+    val orbitLineColor: Color,
+    val angleOffset: Float
+)
+
+// -------------------------------------------------------------
+// 🌠 Create Orbits and Shapes
+// -------------------------------------------------------------
+fun createOrbitShapes(): List<OrbitingShape> {
+    val colors = listOf(
+        0xFF1A1A1A, 0xFF282828, 0xFF363636, 0xFF464646,
+        0xFF565656, 0xFF686868, 0xFF7A7A7A, 0xFF8C8C8C,
+        0xFF9E9E9E, 0xFFB0B0B0, 0xFFC4C4C4, 0xFFFFFFFF
     )
 
-    var currentScreen by remember { mutableStateOf(0) }
-
-    val progress = when (currentScreen) {
-        0 -> 0f
-        1 -> 1f / 3f
-        2 -> 2f / 3f
-        3 -> 1f
-        else -> 1f
-    }
-
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 500),
-        label = "progress"
+    val orbitColors = listOf(
+        0xFF0D0D0D, 0xFF1A1A1A, 0xFF282828, 0xFF363636,
+        0xFF464646, 0xFF565656, 0xFF686868, 0xFF7A7A7A,
+        0xFF8C8C8C, 0xFF9E9E9E, 0xFFB0B0B0, 0xFFC4C4C4
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeContent),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Back button row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            if (currentScreen > 0) {
-                Button(
-                    onClick = { currentScreen-- },
-                    modifier = Modifier.size(50.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    contentPadding = PaddingValues(0.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black,
-                    )
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.left_icon),
-                        contentDescription = "Back",
-                        modifier = Modifier.size(30.dp)
-                    )
+    val radii = listOf(150f, 230f, 320f, 420f, 540f, 680f, 850f, 1050f, 1280f, 1550f, 1850f, 2200f)
+    val shapesPerOrbit = listOf(3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 8, 9)
+
+    return buildList {
+        for (orbitIndex in radii.indices) {
+            val orbitRadius = radii[orbitIndex]
+            val orbitColor = Color(orbitColors[orbitIndex])
+            val orbitBaseSpeed = 0.05f + (0.01f * orbitIndex) // slow base rotation
+
+            val totalShapes = shapesPerOrbit[orbitIndex]
+            val angleStep = 360f / totalShapes
+            val usedAngles = mutableListOf<Float>()
+
+            repeat(totalShapes) { shapeIndex ->
+                // Prevent overlap with random angle but spaced
+                var angle: Float
+                do {
+                    angle = (0..359).random().toFloat()
+                } while (usedAngles.any { abs((it - angle + 360) % 360) < angleStep * 0.6 })
+                usedAngles.add(angle)
+
+                val direction = if ((0..1).random() == 0) 1 else -1
+                val speedMultiplier = orbitBaseSpeed * (0.8f + Math.random().toFloat() * 0.4f) * direction
+
+                val shapeType = when (shapeIndex % 3) {
+                    0 -> ShapeType.FILLED_CIRCLE
+                    1 -> ShapeType.OUTLINED_CIRCLE
+                    else -> ShapeType.RHOMBUS
                 }
-            }
-        }
 
-        // Main content area
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            Crossfade(
-                targetState = screenItems[currentScreen],
-                label = "screen_transition"
-            ) { screenItem ->
-                OnboardingScreen(screenItem)
-            }
-        }
+                val size = when (shapeType) {
+                    ShapeType.FILLED_CIRCLE -> 12f + orbitIndex * 0.6f
+                    ShapeType.OUTLINED_CIRCLE -> 18f + orbitIndex * 0.8f
+                    ShapeType.RHOMBUS -> 14f + orbitIndex * 0.7f
+                }
 
-        // Bottom progress and next button
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Progress text above the button
-                Text(
-                    text = "${currentScreen + 1} / 4",
-                    style = CustomTypography.headlineMedium
+                add(
+                    OrbitingShape(
+                        color = Color(colors[orbitIndex]),
+                        radius = orbitRadius,
+                        size = size,
+                        speedMultiplier = speedMultiplier,
+                        shapeType = shapeType,
+                        orbitLineColor = orbitColor,
+                        angleOffset = angle
+                    )
                 )
-
-                Box(contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        progress = { animatedProgress },
-                        modifier = Modifier
-                            .size(150.dp)
-                            .rotate(-180f),
-                        color = Color.Black,
-                        strokeWidth = 4.dp,
-                        strokeCap = StrokeCap.Round,
-                    )
-
-                    Button(
-                        onClick = {
-                            if (currentScreen < 3) {
-                                currentScreen++
-                            } else {
-                                // Complete onboarding and navigate to home
-                                onOnboardingComplete()
-                                navController.navigate("home") {
-                                    popUpTo("onboard") { inclusive = true }
-                                }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(Color.Black, shape = RoundedCornerShape(100.dp)),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = if (currentScreen < 3) "Next" else "Start",
-                            style = CustomTypography.displayMedium
-                        )
-                    }
-                }
             }
         }
     }
 }
 
+// -------------------------------------------------------------
+// 🌌 Galaxy Animation Composable
+// -------------------------------------------------------------
 @Composable
-fun OnboardingScreen(screenItems: List<Any>) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        Image(
-            painter = painterResource(screenItems[1] as Int),
-            contentDescription = null,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            text = screenItems[2].toString().uppercase(),
-            style = CustomTypography.displayLarge,
-            textAlign = TextAlign.Center
-        )
+fun GalaxyAnimation(modifier: Modifier = Modifier) {
+    val shapes = remember { createOrbitShapes() }
+
+    // Animate rotation slowly
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    val rotation = infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(160000, easing = LinearEasing), // super slow
+            repeatMode = RepeatMode.Restart
+        ), label = ""
+    )
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        // Orbit center outside top-left
+        val orbitCenter = Offset(-size.width * 0.4f, -size.height * 0.4f)
+
+        shapes.forEach { shape ->
+            val angle = rotation.value * shape.speedMultiplier + shape.angleOffset
+            val rad = Math.toRadians(angle.toDouble())
+
+            // shape position based on orbit radius and angle
+            val x = orbitCenter.x + shape.radius * cos(rad).toFloat()
+            val y = orbitCenter.y + shape.radius * sin(rad).toFloat()
+
+            // Draw faint orbit line
+            drawCircle(
+                color = shape.orbitLineColor.copy(alpha = 0.08f),
+                radius = shape.radius,
+                center = orbitCenter,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1f)
+            )
+
+            // Draw the shape
+            when (shape.shapeType) {
+                ShapeType.FILLED_CIRCLE -> {
+                    drawCircle(
+                        color = shape.color,
+                        radius = shape.size,
+                        center = Offset(x, y)
+                    )
+                }
+
+                ShapeType.OUTLINED_CIRCLE -> {
+                    drawCircle(
+                        color = shape.color,
+                        radius = shape.size,
+                        center = Offset(x, y),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
+                    )
+                }
+
+                ShapeType.RHOMBUS -> {
+                    rotate(angle, Offset(x, y)) {
+                        scale(1f, 1f) {
+                            val path = androidx.compose.ui.graphics.Path().apply {
+                                moveTo(x, y - shape.size)
+                                lineTo(x + shape.size, y)
+                                lineTo(x, y + shape.size)
+                                lineTo(x - shape.size, y)
+                                close()
+                            }
+                            drawPath(path, color = shape.color)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -105,42 +105,47 @@ class TabViewModel : ViewModel() {
 
     var currentSong by mutableStateOf<Song?>(null)
     var filePath by mutableStateOf("")
+
+    // Store random songs for header and featured sections
+    var headerSong: Song? by mutableStateOf(null)
+    var featuredSongs: List<Song> by mutableStateOf(emptyList())
+
     private val _tabs = mutableStateOf<List<Tab>>(emptyList())
     val tabs: State<List<Tab>> = _tabs
+
     private val _categories = mutableStateOf<Map<String, List<Category>>>(emptyMap())
     val categories: State<Map<String, List<Category>>> = _categories
 
     private val _songs = mutableStateOf<Map<String, List<Song>>>(emptyMap())
     val songs: State<Map<String, List<Song>>> = _songs
 
-    val songCache = mutableMapOf<String, List<Song>>()
-
     var isPlaying by mutableStateOf(false)
     var isShuffleEnabled by mutableStateOf(false)
     var repeatMode: RepeatMode by mutableStateOf(RepeatMode.OFF)
 
-    fun fetchTabsCategory() {
+    fun fetchSongData() {
         viewModelScope.launch {
             val resultTab = RetroFitClient.api.getTabs(
-                apiKey = SUPABASE_API_KEY_ANON, authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                apiKey = SUPABASE_API_KEY_ANON,
+                authorization = "Bearer $SUPABASE_API_KEY_ANON"
             )
             _tabs.value = resultTab
 
             val resultCategory = RetroFitClient.api.getCategories(
-                apiKey = SUPABASE_API_KEY_ANON, authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                apiKey = SUPABASE_API_KEY_ANON,
+                authorization = "Bearer $SUPABASE_API_KEY_ANON"
             )
-            _categories.value =
-                resultCategory.groupBy { it.tab_id } // It will group all the categories to their tab id
+            _categories.value = resultCategory.groupBy { it.tab_id }
 
             Log.d("TabsViewModel", "Fetched category: $resultCategory")
 
             val resultSong = RetroFitClient.api.getSongs(
-                apiKey = SUPABASE_API_KEY_ANON, authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                apiKey = SUPABASE_API_KEY_ANON,
+                authorization = "Bearer $SUPABASE_API_KEY_ANON"
             )
-            _songs.value =
-                resultSong.groupBy { it.category_id } // It will group all the categories to their category id
+            _songs.value = resultSong.groupBy { it.category_id }
 
-            Log.d("TabsViewModel", "Fetched song: $resultSong")
+            Log.d("TabsViewModel", "Fetched song: ${resultSong.size}")
         }
     }
 
@@ -149,11 +154,9 @@ class TabViewModel : ViewModel() {
         Log.d("Song set", song.toString())
         filePath = musicFilePath
         Log.d("file path set", filePath)
-
     }
-
-
 }
+
 
 @Composable
 fun MusicScreen(
@@ -167,9 +170,6 @@ fun MusicScreen(
     var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     var selectedCategoryIndex by rememberSaveable { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        viewModel.fetchTabsCategory()
-    }
 
     val currentTab = if (tabs.isNotEmpty()) {
         tabs.getOrNull(selectedTabIndex) ?: tabs.first()
@@ -177,7 +177,7 @@ fun MusicScreen(
         null
     }
     val currentCategories = categories[currentTab?.id]
-
+    Log.d("Music data" , tabs.toString())
     val isLoading = tabs.isEmpty() || categories.isEmpty() || songs.isEmpty()
 
 

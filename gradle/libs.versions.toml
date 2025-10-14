@@ -60,6 +60,17 @@ uiGraphics = "1.9.0"
 foundationLayout = "1.9.0"
 uiText = "1.9.0"
 uiGeometry = "1.9.0"
+uiGraphicsVersion = "1.9.1"
+androidxMaterial3 = "1.4.0"
+roomKtx = "2.8.1"
+ui = "1.9.2"
+androidxUiGraphics = "1.9.2"
+foundationVersion = "1.9.2"
+androidxFoundation = "1.9.3"
+animation = "1.9.3"
+androidxUiGraphicsVersion = "1.9.3"
+graphicsShapes = "1.0.1"
+uiUnit = "1.9.3"
 
 [libraries]
 # Core AndroidX
@@ -147,6 +158,17 @@ androidx-compose-ui-ui-graphics = { group = "androidx.compose.ui", name = "ui-gr
 androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 androidx-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
 androidx-ui-geometry = { group = "androidx.compose.ui", name = "ui-geometry", version.ref = "uiGeometry" }
+androidx-compose-ui-ui-graphics2 = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphicsVersion" }
+androidx-compose-material3-material32 = { group = "androidx.compose.material3", name = "material3", version.ref = "androidxMaterial3" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
+androidx-compose-ui-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+androidx-compose-ui-ui-graphics3 = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "androidxUiGraphics" }
+foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }
+androidx-compose-foundation-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "androidxFoundation" }
+androidx-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
+androidx-compose-ui-ui-graphics4 = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "androidxUiGraphicsVersion" }
+androidx-graphics-shapes = { group = "androidx.graphics", name = "graphics-shapes", version.ref = "graphicsShapes" }
+androidx-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

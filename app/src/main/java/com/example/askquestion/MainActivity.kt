@@ -1,30 +1,85 @@
 package com.example.askquestion
 
+import MeditateScreen
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.outlined.Bed
+import androidx.compose.material.icons.outlined.EnergySavingsLeaf
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.QuestionAnswer
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -32,54 +87,40 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.askquestion.theme.ASKQUESTIONTheme
 import com.example.askquestion.theme.AppColors
-import com.example.askquestion.ui.screens.PlayerScreen
-import com.example.askquestion.ui.screens.SplashScreen
-import androidx.compose.animation.core.Easing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import android.view.animation.OvershootInterpolator
-import androidx.activity.viewModels
-import androidx.lifecycle.viewmodel.compose.viewModel
-
-
-import dev.chrisbanes.haze.*
-
-
 import com.example.askquestion.ui.screens.BreatheScreen
+import com.example.askquestion.ui.screens.ChatBotScreen
+import com.example.askquestion.ui.screens.ChatViewModel
 import com.example.askquestion.ui.screens.HomeContent
-import com.example.askquestion.ui.screens.MeditateScreen
+import com.example.askquestion.ui.screens.MeditateItems
 import com.example.askquestion.ui.screens.MusicScreen
+import com.example.askquestion.ui.screens.OnboardingScreen
+import com.example.askquestion.ui.screens.PlayerScreen
 import com.example.askquestion.ui.screens.TabViewModel
+import com.example.askquestion.ui.screens.UserProfileScreen
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
-
 
 class MainActivity : ComponentActivity() {
     private lateinit var onboardingPreferences: OnboardingPreferences
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        window.navigationBarColor = android.graphics.Color.BLACK
 
         onboardingPreferences = OnboardingPreferences(this)
 
         setContent {
             ASKQUESTIONTheme {
-                // Just apply system bar insets here
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets
-                            .systemBars
-                            .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.statusBars)
                 ) {
                     AppNavHost(onboardingPreferences)
                 }
@@ -87,7 +128,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 
 class OnboardingPreferences(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE)
@@ -108,8 +148,7 @@ class AppNavigationState(
 ) {
     val showBottomBar: Boolean
         get() {
-            val shouldShow = currentRoute in listOf("home", "music", "breathe", "player" , "meditate")
-            return shouldShow
+            return currentRoute in listOf("home", "music", "breathe", "player", "meditate", "chatbot")
         }
 
     val currentRouteName: String?
@@ -131,7 +170,7 @@ class AppNavigationState(
         }
     }
 }
-// REMEMBER FUNCTION
+
 @Composable
 fun rememberAppNavigationState(
     navController: NavHostController = rememberNavController()
@@ -144,29 +183,28 @@ fun rememberAppNavigationState(
     }
 }
 
-
-
-@SuppressLint("UnrememberedGetBackStackEntry")
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedGetBackStackEntry")
 @Composable
 fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
     val navigationState = rememberAppNavigationState()
-
-    // Create a single HazeState for the entire app
     val hazeState = rememberHazeState()
 
     var isOnboardingCompleted by remember { mutableStateOf(false) }
     var isOnboardingInitialized by remember { mutableStateOf(false) }
-
     var showBottomNav by remember { mutableStateOf(false) }
 
-    // Initialize onboarding state immediately
+    // Shared ViewModels
+    val chatViewModel: ChatViewModel = viewModel()
+    val tabViewModel: TabViewModel = viewModel() // 👈 Shared across screens
+
+    // --- Onboarding setup ---
     LaunchedEffect(Unit) {
         val completed = onboardingPreferences.isOnboardingCompleted()
         isOnboardingCompleted = completed
         isOnboardingInitialized = true
+        Log.d("AppNavHost", "Onboarding check complete. Is completed: $completed")
     }
 
-    // Handle onboarding completion
     val handleOnboardingComplete = {
         onboardingPreferences.setOnboardingCompleted(true)
         isOnboardingCompleted = true
@@ -183,109 +221,111 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
             showBottomNav = false
         }
     }
-if (isOnboardingInitialized){
-    val startDestination = if (isOnboardingCompleted) "home" else "onboard"
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Main content area - this will be the source for blurring
-        NavHost(
-            navController = navigationState.navController,
-            startDestination = "home",
-            modifier = Modifier
-                .fillMaxSize()
-                .hazeSource(state = hazeState) // Mark background content for blurring
-        ) {
-            composable("onboard") {
-                SplashScreen(
-                    navController = navigationState.navController,
-                    onOnboardingComplete = { handleOnboardingComplete() }
-                )
-            }
-            composable("home") {
-                HomeContent(navigationState.navController)
-            }
-            composable("breathe") {
-                BreatheScreen(navigationState.navController)
-            }
-//            composable("sounds") {
-//                SoundsScreen(navigationState.navController)
-//            }
-            composable("music") {
-                val parentEntry = remember(this) {
-                    navigationState.navController.getBackStackEntry("music")
-                }
-                val sharedViewModel: TabViewModel = viewModel(parentEntry)
-                MusicScreen(
-                    viewModel = sharedViewModel,
-                    navController = navigationState.navController
-                )
-            }
+    // --- NavHost ---
+    if (isOnboardingInitialized) {
+        val startDestination = if (isOnboardingCompleted) "home" else "onboard"
 
-            composable("player") {
-                val parentEntry = remember(this) {
-                    navigationState.navController.getBackStackEntry("music")
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            bottomBar = {
+                AnimatedVisibility(
+                    visible = navigationState.showBottomBar && showBottomNav,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    enter = slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = tween(500, easing = FastOutSlowInEasing)
+                    ) + scaleIn(
+                        initialScale = 0.8f,
+                        animationSpec = tween(400, easing = overshootEasing(1.2f))
+                    ) + fadeIn(animationSpec = tween(300)),
+                    exit = slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = tween(300)
+                    ) + scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(200)
+                    ) + fadeOut(animationSpec = tween(200))
+                ) {
+                    EnhancedBottomNavigation(
+                        navigation = navigationState,
+                        hazeState = hazeState,
+                        chatViewModel = chatViewModel
+                    )
                 }
-                val sharedViewModel: TabViewModel = viewModel(parentEntry)
-                PlayerScreen(
-                    navController = navigationState.navController,
-                    viewModel = sharedViewModel
-                )
             }
-            composable("meditate") {
-                MeditateScreen(navController = navigationState.navController)
+        ) { _ ->
+            NavHost(
+                navController = navigationState.navController,
+                startDestination = startDestination,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(state = hazeState)
+            ) {
+                composable("onboard") {
+                    OnboardingScreen(navController = navigationState.navController)
+                }
+                composable("profile_setup") {
+                    UserProfileScreen(
+                        navController = navigationState.navController,
+                        onOnboardingComplete = { /* Your logic here, e.g., viewModel.onboardingComplete() */ }
+                    )
+                }
+
+                // --- Home ---
+                composable("home") {
+                    HomeContent(
+                        navController = navigationState.navController,
+                        viewModel = tabViewModel // 👈 Shared ViewModel
+                    )
+                }
+
+                // --- Music ---
+                composable("music") {
+                    MusicScreen(
+                        navController = navigationState.navController,
+                        viewModel = tabViewModel // 👈 SAME INSTANCE
+                    )
+                }
+
+                // --- Player ---
+                composable("player") {
+                    PlayerScreen(
+                        navController = navigationState.navController,
+                        viewModel = tabViewModel // 👈 SAME INSTANCE
+                    )
+                }
+
+                // --- Other screens ---
+                composable("breathe") {
+                    BreatheScreen(navigationState.navController)
+                }
+                composable("meditate") {
+                    MeditateScreen(navigationState.navController)
+                }
+                composable("meditate_item") {
+                    MeditateItems(navigationState.navController)
+                }
+                composable("chatbot") {
+                    ChatBotScreen(
+                        navController = navigationState.navController,
+                        viewModel = chatViewModel
+                    )
+                }
             }
         }
-
-        // Bottom navigation with haze effect
-        AnimatedVisibility(
-            visible = navigationState.showBottomBar && showBottomNav,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 20.dp)
-                .align(Alignment.BottomCenter),
-            enter = slideInVertically(
-                initialOffsetY = { fullHeight -> fullHeight },
-                animationSpec = tween(
-                    durationMillis = 500,
-                    easing = FastOutSlowInEasing
-                )
-            ) + scaleIn(
-                initialScale = 0.8f,
-                animationSpec = tween(
-                    durationMillis = 400,
-                    easing = overshootEasing(1.2f)
-                )
-            ) + fadeIn(
-                animationSpec = tween(
-                    durationMillis = 300,
-                    easing = FastOutSlowInEasing
-                )
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { fullHeight -> fullHeight },
-                animationSpec = tween(
-                    durationMillis = 300,
-                    easing = FastOutSlowInEasing
-                )
-            ) + scaleOut(
-                targetScale = 0.8f,
-                animationSpec = tween(durationMillis = 200)
-            ) + fadeOut(
-                animationSpec = tween(durationMillis = 200)
-            )
-        ) {
-            BottomNavigation(
-                navigation = navigationState,
-                hazeState = hazeState // Pass the shared hazeState
-            )
-        }
-    }}
+    }
 }
 
+
 @Composable
-fun BottomNavigation(
+fun EnhancedBottomNavigation(
     navigation: AppNavigationState,
-    hazeState: HazeState
+    hazeState: HazeState,
+    chatViewModel: ChatViewModel
 ) {
     val reflectionGradient = remember {
         Brush.linearGradient(
@@ -296,73 +336,256 @@ fun BottomNavigation(
     }
 
     val shape = RoundedCornerShape(35.dp)
+    val isChatScreen = navigation.isCurrentRoute("chatbot")
 
+    var showChatMode by remember(isChatScreen) { mutableStateOf(isChatScreen) }
+    var rowWidth = if(isChatScreen) 1f else 0.8f
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .padding(horizontal = 32.dp)
-            .clip(shape)
+        modifier = Modifier.fillMaxWidth(0.8f).padding(bottom = 20.dp),
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeStyle(
-                        blurRadius = 25.dp,
-                        tint = HazeTint(Color.White.copy(alpha = 0.2f)),
-                        noiseFactor = 0f
-                    )
-                )
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(reflectionGradient, shape)
-        )
 
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 40.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxWidth(rowWidth),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavItem(
-                icon = Icons.Outlined.Home,
-                selectedIcon = Icons.Filled.Home,
-                isSelected = navigation.isCurrentRoute("home"),
-                onClick = { navigation.navigateTo("home") }
-            )
-            NavItem(
-                icon = Icons.Outlined.MusicNote,
-                selectedIcon = Icons.Filled.MusicNote,
-                isSelected = navigation.isCurrentRoute("music"),
-                onClick = { navigation.navigateTo("music") }
-            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(70.dp)
+                    .clip(shape)
+                    .hazeEffect(
+                        state = hazeState,
+                        style = HazeStyle(
+                            blurRadius = 25.dp,
+                            tint = HazeTint(Color.White.copy(alpha = 0.2f)),
+                            noiseFactor = 0f
+                        )
+                    )
+                    .background(reflectionGradient, shape)
+            ) {
+                AnimatedContent(
+                    targetState = showChatMode,
+                    transitionSpec = {
+                        if (targetState) {
+                            slideInHorizontally { -it } + fadeIn() togetherWith
+                                    slideOutHorizontally { it } + fadeOut()
+                        } else {
+                            slideInHorizontally { it } + fadeIn() togetherWith
+                                    slideOutHorizontally { -it } + fadeOut()
+                        }
+                    },
+                    label = "bottom_nav_content"
+                ) { isChatModeActive ->
+                    if (isChatModeActive) {
+                        ChatInputBar(chatViewModel = chatViewModel)
+                    } else {
+                        NormalBottomBar(navigation = navigation)
+                    }
+                }
+            }
 
-            NavItem(
-                icon = Icons.Outlined.EnergySavingsLeaf,
-                selectedIcon = Icons.Filled.GraphicEq,
-                isSelected = navigation.isCurrentRoute("breathe"),
-                onClick = { navigation.navigateTo("breathe") }
-            )
-            NavItem(
-                icon = Icons.Outlined.Bed,
-                selectedIcon = Icons.Filled.GraphicEq,
-                isSelected = navigation.isCurrentRoute("meditate"),
-                onClick = { navigation.navigateTo("meditate") }
-            )
+            if (isChatScreen) {
+                FloatingToggleButton(
+                    isInChatMode = showChatMode,
+                    onClick = { showChatMode = !showChatMode }
+                )
+            }
+        }
+    }
+}
+@Composable
+fun ChatInputBar(
+    chatViewModel: ChatViewModel,
+    modifier: Modifier = Modifier
+) {
+    var input by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        BasicTextField(
+            value = input,
+            onValueChange = { input = it },
+            modifier = Modifier
+                .weight(1f)
+                .background(
+                    Color.White.copy(alpha = 0.15f),
+                    RoundedCornerShape(24.dp)
+                )
+                .border(
+                    1.dp,
+                    Color.White.copy(alpha = 0.1f),
+                    RoundedCornerShape(24.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            singleLine = true,
+            cursorBrush = SolidColor(Color.White),
+            textStyle = LocalTextStyle.current.copy(color = Color.White),
+            decorationBox = { innerTextField ->
+                if (input.isEmpty()) {
+                    Text(
+                        "Ask me anything...",
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = LocalTextStyle.current
+                    )
+                }
+                innerTextField()
+            }
+        )
+
+        AnimatedVisibility(
+            visible = input.isNotBlank(),
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut()
+        ) {
+            IconButton(
+                onClick = {
+                    chatViewModel.sendMessage(input.trim())
+                    input = ""
+                    keyboardController?.hide()
+                },
+                modifier = Modifier
+                    .size(46.dp)
+                    .background(Color(0xFF69F0AE), CircleShape)
+            ) {
+                Icon(
+                    Icons.Default.Send,
+                    contentDescription = "Send",
+                    tint = Color.Black,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
 
-// Helper functions
-fun OvershootInterpolator.toEasing(): Easing {
-    return Easing { fraction ->
-        this.getInterpolation(fraction)
+@Composable
+fun FloatingToggleButton(
+    isInChatMode: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.9f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "toggle_scale"
+    )
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isInChatMode) Color(0xFFE91E63) else Color(0xFF69F0AE),
+        animationSpec = tween(400),
+        label = "toggle_bg_color"
+    )
+    val iconColor = if (isInChatMode) Color.White else Color.Black
+
+    Box(
+        modifier = modifier
+            .size(70.dp)
+            .scale(scale),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color.White.copy(alpha = .15f), Color.Transparent),
+                        start = Offset.Zero,
+                        end = Offset(0f, 20f)
+                    ),
+                    CircleShape
+                )
+                .background(backgroundColor.copy(alpha = 0.9f), CircleShape)
+                .border(1.5.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            AnimatedContent(
+                targetState = isInChatMode,
+                label = "toggle_icon_anim",
+                transitionSpec = {
+                    (fadeIn(tween(300)) + scaleIn(
+                        tween(300),
+                        initialScale = 0.7f
+                    )) togetherWith
+                            (fadeOut(tween(200)) + scaleOut(
+                                tween(200),
+                                targetScale = 0.7f
+                            ))
+                }
+            ) { isChat ->
+                if (isChat) {
+                    Icon(
+                        Icons.Outlined.Home,
+                        contentDescription = "Switch to navigation",
+                        tint = iconColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                } else {
+                    Icon(
+                        Icons.Outlined.QuestionAnswer,
+                        contentDescription = "Switch to chat",
+                        tint = iconColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NormalBottomBar(
+    navigation: AppNavigationState
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        NavItem(
+            icon = Icons.Outlined.Home,
+            selectedIcon = Icons.Filled.Home,
+            isSelected = navigation.isCurrentRoute("home"),
+            onClick = { navigation.navigateTo("home") }
+        )
+        NavItem(
+            icon = Icons.Outlined.MusicNote,
+            selectedIcon = Icons.Filled.MusicNote,
+            isSelected = navigation.isCurrentRoute("music"),
+            onClick = { navigation.navigateTo("music") }
+        )
+        NavItem(
+            icon = Icons.Outlined.EnergySavingsLeaf,
+            selectedIcon = Icons.Filled.GraphicEq,
+            isSelected = navigation.isCurrentRoute("breathe"),
+            onClick = { navigation.navigateTo("breathe") }
+        )
+        NavItem(
+            icon = Icons.Outlined.Bed,
+            selectedIcon = Icons.Filled.GraphicEq,
+            isSelected = navigation.isCurrentRoute("chatbot"),
+            onClick = { navigation.navigateTo("chatbot") }
+        )
     }
 }
 
@@ -373,7 +596,6 @@ fun overshootEasing(tension: Float = 2f): Easing {
     }
 }
 
-// NAV ITEM with animations
 @Composable
 fun NavItem(
     icon: ImageVector,
@@ -417,7 +639,3 @@ fun NavItem(
         tint = iconTint
     )
 }
-
-
-
-
