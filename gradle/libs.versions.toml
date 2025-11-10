@@ -1,7 +1,7 @@
 [versions]
 # Note: Accompanist Pager is deprecated, use Compose Foundation Pager instead
 accompanistPager = "0.34.0"  # Latest but deprecated
-agp = "8.8.2"  # Updated Android Gradle Plugin
+agp = "8.13.0"  # Updated Android Gradle Plugin
 
 androidxComposeBom = "2025.08.00"
 blurview = "version-2.0.6"
