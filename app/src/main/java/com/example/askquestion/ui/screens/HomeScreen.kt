@@ -39,8 +39,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -117,7 +115,7 @@ fun AppBackground(): Brush {
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun HomeContent(navController: NavController, viewModel: TabViewModel = viewModel()) {
+fun HomeContent(navController: NavController, viewModel: TabViewModel = viewModel(), homeViewModel: HomeViewModel = viewModel()) {
 
     LaunchedEffect(Unit) {
         if (viewModel.songs.value.isEmpty()) {
@@ -128,6 +126,7 @@ fun HomeContent(navController: NavController, viewModel: TabViewModel = viewMode
     val tabs by viewModel.tabs
     val songs by viewModel.songs
     val isLoading = tabs.isEmpty()
+    val user by homeViewModel.user
 
     LaunchedEffect(songs) {
         if (songs.isNotEmpty() && viewModel.headerSong == null) {
@@ -155,11 +154,11 @@ fun HomeContent(navController: NavController, viewModel: TabViewModel = viewMode
                 .verticalScroll(rememberScrollState())
         ) {
             // BUG FIX & FEATURE 1: Improved Animated Header
-            AppHeader()
+            AppHeader(user?.username ?: "")
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            HeaderSection(headerSong, viewModel, navController, isLoading)
+            HeaderSection(headerSong, viewModel, navController, isLoading, user?.username ?: "")
 
             Spacer(modifier = Modifier.height(28.dp))
             MoodSelector()
@@ -186,7 +185,7 @@ fun HomeContent(navController: NavController, viewModel: TabViewModel = viewMode
 
 // FEATURE 1: Animated Breezen Header Text
 @Composable
-fun AppHeader() {
+fun AppHeader(username: String) {
     var breezenText by remember { mutableStateOf("") }
 
     // Typewriter effect animation
@@ -213,23 +212,34 @@ fun AppHeader() {
         )
         Spacer(Modifier.weight(1f))
 
-        // FEATURE 2: 6-Sided Cookie Avatar Button
-        Button(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(HexagonShape), // Apply custom hexagon shape
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White, contentColor = Color.Black
-            ),
-            shape = HexagonShape, // Also set shape property for consistency
-            onClick = { /* TODO: Navigate to user profile or settings */ }) {
-            Icon(
-                painter = painterResource(R.drawable.heart), // Changed icon
-                contentDescription = "User Profile",
-                tint = Color.Black,
-                modifier = Modifier.size(24.dp)
+        UserAvatar(username = username)
+    }
+}
+
+@Composable
+fun UserAvatar(username: String) {
+    val initial = username.firstOrNull()?.uppercaseChar() ?: '?'
+    val gradientBrush = Brush.linearGradient(
+        colors = listOf(Color(0xFF00C853), Color(0xFF69F0AE)),
+        start = Offset(0f, 0f),
+        end = Offset(100f, 100f)
+    )
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(gradientBrush),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initial.toString(),
+            color = Color.Black,
+            style = CustomTypography.bodyLarge.copy(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
             )
-        }
+        )
     }
 }
 
@@ -276,7 +286,13 @@ fun SectionHeader(title: String) {
 }
 
 @Composable
-fun HeaderSection(song: Song?, viewModel: TabViewModel, navController: NavController, isLoading: Boolean) {
+fun HeaderSection(
+    song: Song?,
+    viewModel: TabViewModel,
+    navController: NavController,
+    isLoading: Boolean,
+    username: String
+) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -306,7 +322,7 @@ fun HeaderSection(song: Song?, viewModel: TabViewModel, navController: NavContro
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                "GOOD MORNING ARYAN",
+                "GOOD MORNING ${username.uppercase()}",
                 style = CustomTypography.bodySmall.copy(
                     letterSpacing = 2.sp, fontSize = 12.sp, fontWeight = FontWeight.Bold
                 ),
@@ -1033,7 +1049,7 @@ fun FeatureSectionCard2(
 
                 Spacer(Modifier.height(10.dp))
 
-                androidx.compose.material.IconButton(
+                IconButton(
                     onClick = {
                         if (!isLoading && song != null) {
                             playGetMusicFile(

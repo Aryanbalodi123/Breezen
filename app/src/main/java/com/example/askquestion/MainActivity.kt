@@ -91,12 +91,10 @@ import com.example.askquestion.ui.screens.BreatheScreen
 import com.example.askquestion.ui.screens.ChatBotScreen
 import com.example.askquestion.ui.screens.ChatViewModel
 import com.example.askquestion.ui.screens.HomeContent
-import com.example.askquestion.ui.screens.MeditateItems
 import com.example.askquestion.ui.screens.MusicScreen
 import com.example.askquestion.ui.screens.OnboardingScreen
 import com.example.askquestion.ui.screens.PlayerScreen
 import com.example.askquestion.ui.screens.TabViewModel
-import com.example.askquestion.ui.screens.UserProfileScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -195,7 +193,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
 
     // Shared ViewModels
     val chatViewModel: ChatViewModel = viewModel()
-    val tabViewModel: TabViewModel = viewModel() // 👈 Shared across screens
+    val tabViewModel: TabViewModel = viewModel() // 争 Shared across screens
 
     // --- Onboarding setup ---
     LaunchedEffect(Unit) {
@@ -266,20 +264,21 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                     .hazeSource(state = hazeState)
             ) {
                 composable("onboard") {
-                    OnboardingScreen(navController = navigationState.navController)
-                }
-                composable("profile_setup") {
-                    UserProfileScreen(
+                    // Pass the completion handler to the onboarding screen
+                    OnboardingScreen(
                         navController = navigationState.navController,
-                        onOnboardingComplete = { /* Your logic here, e.g., viewModel.onboardingComplete() */ }
+                        onOnboardingComplete = handleOnboardingComplete
                     )
                 }
+
+                // --- REMOVED composable("profile_setup") ---
+                // The profile setup route is no longer needed.
 
                 // --- Home ---
                 composable("home") {
                     HomeContent(
                         navController = navigationState.navController,
-                        viewModel = tabViewModel // 👈 Shared ViewModel
+                        viewModel = tabViewModel // 争 Shared ViewModel
                     )
                 }
 
@@ -287,7 +286,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 composable("music") {
                     MusicScreen(
                         navController = navigationState.navController,
-                        viewModel = tabViewModel // 👈 SAME INSTANCE
+                        viewModel = tabViewModel // 争 SAME INSTANCE
                     )
                 }
 
@@ -295,7 +294,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 composable("player") {
                     PlayerScreen(
                         navController = navigationState.navController,
-                        viewModel = tabViewModel // 👈 SAME INSTANCE
+                        viewModel = tabViewModel // 争 SAME INSTANCE
                     )
                 }
 
@@ -306,9 +305,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 composable("meditate") {
                     MeditateScreen(navigationState.navController)
                 }
-                composable("meditate_item") {
-                    MeditateItems(navigationState.navController)
-                }
+
                 composable("chatbot") {
                     ChatBotScreen(
                         navController = navigationState.navController,

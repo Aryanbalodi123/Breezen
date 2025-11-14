@@ -1,5 +1,6 @@
 package com.example.askquestion.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -79,12 +80,17 @@ enum class OnboardingState { WELCOME, SIGN_UP, SIGN_IN }
 
 // --- Main Onboarding Screen ---
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun OnboardingScreen(navController: NavController) {
+fun OnboardingScreen(
+    navController: NavController,
+    onOnboardingComplete: () -> Unit // This is the success callback
+) {
 
     var state by remember { mutableStateOf(OnboardingState.WELCOME) }
     val revealRadius = remember { Animatable(0f) }
-    val buttonColor = Color(0xFF8E44AD)
+    // Changed button color to green theme
+    val buttonColor = Color(0xFF00C853)
     var hasRevealed by remember { mutableStateOf(false) }
 
     BoxWithConstraints(
@@ -112,8 +118,6 @@ fun OnboardingScreen(navController: NavController) {
         )
         // --- END OF GLASS EFFECT ANIMATIONS ---
 
-        // +++ ADD THIS LINE +++
-        // Create the shapes list once and remember it
         val shapes = remember { createOrbitShapes() }
 
         // 1. The background animation (always running)
@@ -121,8 +125,7 @@ fun OnboardingScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .blur(radius = blurAmount) // Apply blur
-                .alpha(alphaAmount), // Apply dimness   
-            // +++ PASS THE SHAPES +++
+                .alpha(alphaAmount), // Apply dimness
             shapes = shapes
         )
 
@@ -133,8 +136,8 @@ fun OnboardingScreen(navController: NavController) {
             exit = fadeOut(animationSpec = tween(durationMillis = 300))
         ) {
             SignUpScreen(
-                navController = navController,
-                onSignInClick = { state = OnboardingState.SIGN_IN } // Go to Sign In
+                onSignInClick = { state = OnboardingState.SIGN_IN }, // Go to Sign In
+                onSignUpSuccess = onOnboardingComplete // *** UPDATED ***
             )
         }
 
@@ -145,8 +148,8 @@ fun OnboardingScreen(navController: NavController) {
             exit = fadeOut(animationSpec = tween(durationMillis = 300))
         ) {
             SignInScreen(
-                navController = navController,
-                onSignUpClick = { state = OnboardingState.SIGN_UP } // Go to Sign Up
+                onSignUpClick = { state = OnboardingState.SIGN_UP }, // Go to Sign Up
+                onSignInSuccess = onOnboardingComplete // *** UPDATED ***
             )
         }
 
@@ -238,8 +241,9 @@ private fun WelcomeContent(onGetStartedClick: () -> Unit) {
             ),
             label = "button_scale"
         )
+        // Changed button to green gradient
         val meditationBrush = Brush.horizontalGradient(
-            colors = listOf(Color(0xFF8E44AD), Color(0xFFB866D9))
+            colors = listOf(Color(0xFF00C853), Color(0xFF69F0AE))
         )
 
         Button(
@@ -263,7 +267,7 @@ private fun WelcomeContent(onGetStartedClick: () -> Unit) {
             ) {
                 Text(
                     text = "Continue Journey",
-                    color = Color.White,
+                    color = Color.Black, // Changed text to black for contrast
                     style = CustomTypography.bodyLarge.copy(fontSize = 18.sp),
                     maxLines = 1
                 )
@@ -275,6 +279,7 @@ private fun WelcomeContent(onGetStartedClick: () -> Unit) {
 
 
 // --- Galaxy Animation Code (Unchanged) ---
+// (No changes needed to the animation code below)
 
 private fun createOrbitShapes(): List<OrbitingShape> {
     val colors = listOf(
@@ -342,10 +347,10 @@ fun GalaxyAnimation(modifier: Modifier = Modifier, shapes: List<OrbitingShape>) 
     Canvas(modifier = modifier) {
         val centerX = -size.width * 0.2f
         val centerY = -size.height * 0.2f
-        val uniqueRadii = shapes.map { it.radius }.distinct()
-        uniqueRadii.forEach { radius ->
-            val orbitColor = shapes.first { it.radius == radius }.orbitLineColor
-            drawOrbitLine(orbitColor, radius, centerX, centerY)
+        val uniqueRadii = shapes.map { it.radius }.distinct().sorted()
+        uniqueRadii.forEachIndexed { index, radius ->
+            val orbitColor = shapes.firstOrNull { it.radius == radius }?.orbitLineColor ?: Color.Gray
+            drawOrbitLine(orbitColor.copy(alpha = 0.5f), radius, centerX, centerY)
         }
         shapes.forEach { shape ->
             drawOrbitingShape(shape, angle, centerX, centerY)
@@ -397,5 +402,3 @@ fun DrawScope.drawOrbitingShape(shape: OrbitingShape, angle: Float, centerX: Flo
         }
     }
 }
-
-

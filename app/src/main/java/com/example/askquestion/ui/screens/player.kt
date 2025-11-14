@@ -1,7 +1,6 @@
 package com.example.askquestion.ui.screens
 
 import android.util.Log
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,13 +9,12 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.IconButton
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,22 +28,20 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
@@ -59,7 +55,6 @@ import com.example.askquestion.theme.CustomTypography
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.*
 
 fun minSec(duration: Long): List<Long> {
@@ -180,8 +175,6 @@ fun PlayerScreen(
                     }
                 }
             }
-        } catch (ce: CancellationException) {
-            /* cancelled -> ignore */
         } catch (t: Throwable) {
             Log.e("PlayerScreen", "palette failed", t)
             dominantColor = Color(0xFF6366F1)
@@ -205,7 +198,7 @@ fun PlayerScreen(
         ) {
             // Top bar (same as you had)
             Box(modifier = Modifier.fillMaxWidth()) {
-                androidx.compose.material3.IconButton(
+                IconButton(
                     onClick = { navController.popBackStack() },
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -323,10 +316,8 @@ fun PlayerScreen(
                                     TabViewModel.RepeatMode.ONE -> Player.REPEAT_MODE_ONE
                                 }
 
-                                player.repeatMode = exoRepeat
-
-
-                            try { player.repeatMode = exoRepeat as Int
+                                try {
+                                     player.repeatMode = exoRepeat
                                 } catch (t: Throwable) { Log.e("PlayerScreen", "repeat failed", t) }
                             }
                         }
