@@ -81,6 +81,41 @@ object RetroFitClient {
     }
 }
 
+/**
+ * 🔥 FIX: New function to get the streamable URL.
+ * This function is much faster as it doesn't download the file.
+ */
+suspend fun getMusicStreamUrl(botToken: String, fileID: String): String? {
+    return withContext(Dispatchers.IO) {
+        try {
+            // Step 1: Ask Telegram for the file path
+            val getFileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=$fileID"
+            val connection = URL(getFileUrl).openConnection() as HttpURLConnection
+            val jsonData = connection.inputStream.bufferedReader().readText()
+            Log.d("ApiHelper", "GetFile JSON: $jsonData")
+            connection.disconnect()
+
+            val filePath = JSONObject(jsonData)
+                .getJSONObject("result")
+                .getString("file_path")
+
+            // Step 2: Build and return the direct download URL for streaming
+            val downloadUrl = "https://api.telegram.org/file/bot$botToken/$filePath"
+            Log.d("ApiHelper", "Got stream URL: $downloadUrl")
+            downloadUrl
+
+        } catch (e: Exception) {
+            Log.e("ApiHelper", "Failed to get music stream URL", e)
+            e.printStackTrace()
+            null
+        }
+    }
+}
+
+/**
+ * DEPRECATED: This function downloads the *entire* file, causing slow loads.
+ * Replaced by getMusicStreamUrl.
+ */
 suspend fun retrieveMusicFile(
     context: Context,
     botToken: String,
@@ -107,12 +142,14 @@ suspend fun retrieveMusicFile(
             // Step 3: Prepare local file location
             val localFile = File(context.filesDir, fileName)
             if (localFile.exists()) {
+                Log.d("ApiHelper", "File already cached, playing from disk.")
                 return@withContext localFile.absolutePath
             }
             // Step 4: Build direct download URL
             val downloadUrl = "https://api.telegram.org/file/bot$botToken/$filePath"
 
             // Step 5: Download and save locally
+            Log.d("ApiHelper", "Downloading file, this will be slow...")
             val fileConnection = URL(downloadUrl).openConnection() as HttpURLConnection
             val inputStream = fileConnection.inputStream
             val outputStream = FileOutputStream(localFile)

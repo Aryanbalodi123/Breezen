@@ -1,33 +1,26 @@
 package com.example.askquestion
 
 import android.content.Context
-import android.util.Log
 import androidx.navigation.NavController
 import com.example.askquestion.network.Song
-import com.example.askquestion.network.TELEGRAM_BOT_TOKEN
-import com.example.askquestion.network.retrieveMusicFile
 import com.example.askquestion.ui.screens.TabViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
-fun playGetMusicFile(
+/**
+ * Immediately navigates to the player and tells the ViewModel to
+ * prepare the selected song from the given playlist.
+ */
+fun playSongFromPlaylist(
     context: Context,
     viewModel: TabViewModel,
-    musicItem: Song?,
-    coroutineScope: CoroutineScope,
+    selectedSong: Song,
+    playlist: List<Song>,
     navController: NavController
 ) {
-    if (musicItem == null) return
+    if (playlist.isEmpty()) return
 
-    coroutineScope.launch {
-        val musicFilePath = retrieveMusicFile(context, TELEGRAM_BOT_TOKEN, musicItem.stream_id)
+    // 1. Navigate immediately so the user sees the loading screen.
+    navController.navigate("player")
 
-        if (musicFilePath != null) {
-            viewModel.setCurrentSong(context, musicItem, musicFilePath)
-            navController.navigate("player")
-
-        } else {
-            Log.e("MusicUtils", "Failed to fetch music file for ${musicItem.title}")
-        }
-    }
+    // 2. Tell the ViewModel to handle everything else in the background.
+    viewModel.playSong(context, selectedSong, playlist)
 }

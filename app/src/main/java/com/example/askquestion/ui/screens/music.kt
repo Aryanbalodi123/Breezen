@@ -53,7 +53,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -90,12 +89,32 @@ import com.example.askquestion.network.SUPABASE_API_KEY_ANON
 import com.example.askquestion.network.Song
 import com.example.askquestion.network.TELEGRAM_BOT_TOKEN
 import com.example.askquestion.network.Tab
-import com.example.askquestion.network.retrieveMusicFile
+import com.example.askquestion.network.getMusicStreamUrl
+import com.example.askquestion.playSongFromPlaylist
 import com.example.askquestion.theme.AppColors
 import com.example.askquestion.theme.CustomTypography
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
+enum class PlayerLoadState {
+    IDLE,
+    INITIAL,
+    TRANSITIONING
+}
+
+/**
+ * 🔥 REDESIGN: Upgraded state to hold the full 'nextUpSong' object.
+ * This is required for the new blurred "Next Up" bar which needs an image and artist.
+ */
+data class PlayerUiState(
+    val currentSong: Song? = null,
+    val streamUrl: String = "",
+    val loadState: PlayerLoadState = PlayerLoadState.INITIAL,
+    val isBuffering: Boolean = false,
+    val dominantColor: Color = Color(0xFF444444),
+    val nextUpSong: Song? = null // 🔥 REDESIGN: Was nextSongTitle: String?
+)
 
 class TabViewModel : ViewModel() {
 
@@ -103,21 +122,22 @@ class TabViewModel : ViewModel() {
         OFF, ALL, ONE
     }
 
-    var currentSong by mutableStateOf<Song?>(null)
-    var filePath by mutableStateOf("")
+    private val _playerUiState = mutableStateOf(PlayerUiState())
+    private val _tabs = mutableStateOf<List<Tab>>(emptyList())
+    private val _categories = mutableStateOf<Map<String, List<Category>>>(emptyMap())
+    private val _songs = mutableStateOf<Map<String, List<Song>>>(emptyMap())
+    private val _allSongs = mutableStateOf<List<Song>>(emptyList())
+    private val _currentPlaylist = mutableStateOf<List<Song>>(emptyList())
+    private var _currentSongIndex = -1
 
-    // Store random songs for header and featured sections
+    val playerUiState: State<PlayerUiState> = _playerUiState
+    val tabs: State<List<Tab>> = _tabs
+    val categories: State<Map<String, List<Category>>> = _categories
+    val songs: State<Map<String, List<Song>>> = _songs
+    val allSongs: State<List<Song>> = _allSongs
+
     var headerSong: Song? by mutableStateOf(null)
     var featuredSongs: List<Song> by mutableStateOf(emptyList())
-
-    private val _tabs = mutableStateOf<List<Tab>>(emptyList())
-    val tabs: State<List<Tab>> = _tabs
-
-    private val _categories = mutableStateOf<Map<String, List<Category>>>(emptyMap())
-    val categories: State<Map<String, List<Category>>> = _categories
-
-    private val _songs = mutableStateOf<Map<String, List<Song>>>(emptyMap())
-    val songs: State<Map<String, List<Song>>> = _songs
 
     var isPlaying by mutableStateOf(false)
     var isShuffleEnabled by mutableStateOf(false)
@@ -125,35 +145,190 @@ class TabViewModel : ViewModel() {
 
     fun fetchSongData() {
         viewModelScope.launch {
-            val resultTab = RetroFitClient.api.getTabs(
-                apiKey = SUPABASE_API_KEY_ANON,
-                authorization = "Bearer $SUPABASE_API_KEY_ANON"
-            )
-            _tabs.value = resultTab
+            try {
+                val resultTab = RetroFitClient.api.getTabs(
+                    apiKey = SUPABASE_API_KEY_ANON,
+                    authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                )
+                _tabs.value = resultTab
 
-            val resultCategory = RetroFitClient.api.getCategories(
-                apiKey = SUPABASE_API_KEY_ANON,
-                authorization = "Bearer $SUPABASE_API_KEY_ANON"
-            )
-            _categories.value = resultCategory.groupBy { it.tab_id }
+                val resultCategory = RetroFitClient.api.getCategories(
+                    apiKey = SUPABASE_API_KEY_ANON,
+                    authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                )
+                _categories.value = resultCategory.groupBy { it.tab_id }
 
-            Log.d("TabsViewModel", "Fetched category: $resultCategory")
+                val resultSong = RetroFitClient.api.getSongs(
+                    apiKey = SUPABASE_API_KEY_ANON,
+                    authorization = "Bearer $SUPABASE_API_KEY_ANON"
+                )
+                _songs.value = resultSong.groupBy { it.category_id }
+                _allSongs.value = resultSong
 
-            val resultSong = RetroFitClient.api.getSongs(
-                apiKey = SUPABASE_API_KEY_ANON,
-                authorization = "Bearer $SUPABASE_API_KEY_ANON"
-            )
-            _songs.value = resultSong.groupBy { it.category_id }
-
-            Log.d("TabsViewModel", "Fetched song: ${resultSong.size}")
+                Log.d("TabsViewModel", "Fetched ${resultSong.size} songs.")
+            } catch (e: Exception) {
+                Log.e("TabsViewModel", "Failed to fetch song data", e)
+            }
         }
     }
 
-    fun setCurrentSong(context: Context, song: Song, musicFilePath: String) {
-        currentSong = song
-        Log.d("Song set", song.toString())
-        filePath = musicFilePath
-        Log.d("file path set", filePath)
+    fun playSong(context: Context, song: Song, playlist: List<Song>) {
+        _currentPlaylist.value = playlist
+        _currentSongIndex = playlist.indexOf(song)
+        _playerUiState.value = PlayerUiState(loadState = PlayerLoadState.INITIAL)
+        prepareSongInternal(context, song, PlayerLoadState.INITIAL)
+    }
+
+    fun playNextSong(context: Context) {
+        if (_currentPlaylist.value.isEmpty()) return
+        val newIndex = getNextIndex()
+        if (newIndex == _currentSongIndex && repeatMode != RepeatMode.ALL) return
+
+        _currentSongIndex = newIndex
+        val newSong = _currentPlaylist.value[newIndex]
+        _playerUiState.value = _playerUiState.value.copy(loadState = PlayerLoadState.TRANSITIONING)
+        prepareSongInternal(context, newSong, PlayerLoadState.TRANSITIONING)
+    }
+
+    fun playPreviousSong(context: Context) {
+        if (_currentPlaylist.value.isEmpty()) return
+        var newIndex = _currentSongIndex - 1
+        if (newIndex < 0) {
+            newIndex = _currentPlaylist.value.size - 1
+        }
+        _currentSongIndex = newIndex
+        val newSong = _currentPlaylist.value[newIndex]
+        _playerUiState.value = _playerUiState.value.copy(loadState = PlayerLoadState.TRANSITIONING)
+        prepareSongInternal(context, newSong, PlayerLoadState.TRANSITIONING)
+    }
+
+    fun toggleShuffle() {
+        isShuffleEnabled = !isShuffleEnabled
+        updateNextUpSong() // 🔥 REDESIGN: Update song object, not just title
+    }
+
+    fun toggleRepeat() {
+        repeatMode = when (repeatMode) {
+            RepeatMode.OFF -> RepeatMode.ALL
+            RepeatMode.ALL -> RepeatMode.ONE
+            RepeatMode.ONE -> RepeatMode.OFF
+        }
+        updateNextUpSong() // 🔥 REDESIGN: Update song object, not just title
+    }
+
+    fun onPlayerReadyAndImageLoaded() {
+        _playerUiState.value = _playerUiState.value.copy(loadState = PlayerLoadState.IDLE)
+    }
+
+    fun setIsBuffering(isBuffering: Boolean) {
+        _playerUiState.value = _playerUiState.value.copy(isBuffering = isBuffering)
+    }
+
+    fun setDominantColor(color: Color) {
+        _playerUiState.value = _playerUiState.value.copy(dominantColor = color)
+    }
+
+    /**
+     * 🔥 REDESIGN: Updated to get and set the full 'nextUpSong' object.
+     */
+    private fun prepareSongInternal(context: Context, song: Song, triggeredBy: PlayerLoadState) {
+        viewModelScope.launch {
+            try {
+                val musicStreamUrl = getMusicStreamUrl(TELEGRAM_BOT_TOKEN, song.stream_id)
+
+                if (musicStreamUrl != null) {
+                    val nextSong = getNextUpSong() // 🔥 REDESIGN
+
+                    if (triggeredBy == PlayerLoadState.INITIAL) {
+                        _playerUiState.value = PlayerUiState(
+                            currentSong = song,
+                            streamUrl = musicStreamUrl,
+                            loadState = PlayerLoadState.INITIAL,
+                            isBuffering = true,
+                            nextUpSong = nextSong, // 🔥 REDESIGN
+                            dominantColor = _playerUiState.value.dominantColor
+                        )
+                    } else {
+                        _playerUiState.value = _playerUiState.value.copy(
+                            currentSong = song,
+                            streamUrl = musicStreamUrl,
+                            isBuffering = true,
+                            nextUpSong = nextSong // 🔥 REDESIGN
+                        )
+                    }
+                } else {
+                    Log.e("TabViewModel", "Failed to retrieve file for ${song.title}")
+                    if (triggeredBy != PlayerLoadState.INITIAL) playNextSong(context)
+                }
+            } catch (e: Exception) {
+                Log.e("TabViewModel", "Error in prepareSongInternal", e)
+                if (triggeredBy != PlayerLoadState.INITIAL) playNextSong(context)
+            }
+        }
+    }
+
+    private fun getNextIndex(peek: Boolean = false): Int {
+        if (_currentPlaylist.value.isEmpty()) return -1
+
+        when (repeatMode) {
+            RepeatMode.ONE -> {
+                if (!peek) {
+                    updateNextUpSong(forceNext = true)
+                }
+                return _currentSongIndex
+            }
+
+            RepeatMode.ALL, RepeatMode.OFF -> {
+                if (isShuffleEnabled) {
+                    if (_currentPlaylist.value.size <= 1) return _currentSongIndex
+                    var newIndex = _currentSongIndex
+                    while (newIndex == _currentSongIndex) {
+                        newIndex = Random.nextInt(0, _currentPlaylist.value.size)
+                    }
+                    return newIndex
+                } else {
+                    val newIndex = _currentSongIndex + 1
+                    return if (newIndex >= _currentPlaylist.value.size) {
+                        if (repeatMode == RepeatMode.ALL) 0 else _currentSongIndex
+                    } else {
+                        newIndex
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 🔥 REDESIGN: Renamed from getNextSongTitle to getNextUpSong.
+     * Now returns the full Song object.
+     */
+    private fun getNextUpSong(forceNext: Boolean = false): Song? {
+        if (_currentPlaylist.value.isEmpty()) return null
+
+        val originalRepeatMode = repeatMode
+        if (forceNext && repeatMode == RepeatMode.ONE) {
+            repeatMode = RepeatMode.ALL
+        }
+
+        val nextIndex = getNextIndex(peek = true)
+
+        if (forceNext) {
+            repeatMode = originalRepeatMode
+        }
+
+        return if (nextIndex != -1 && nextIndex != _currentSongIndex) {
+            _currentPlaylist.value.getOrNull(nextIndex)
+        } else {
+            null
+        }
+    }
+
+    /**
+     * 🔥 REDESIGN: Updates the 'nextUpSong' object in the state.
+     */
+    private fun updateNextUpSong(forceNext: Boolean = false) {
+        val nextSong = getNextUpSong(forceNext)
+        _playerUiState.value = _playerUiState.value.copy(nextUpSong = nextSong)
     }
 }
 
@@ -177,9 +352,8 @@ fun MusicScreen(
         null
     }
     val currentCategories = categories[currentTab?.id]
-    Log.d("Music data" , tabs.toString())
-    val isLoading = tabs.isEmpty() || categories.isEmpty() || songs.isEmpty()
-
+    Log.d("Music data", tabs.toString())
+    val isLoading = tabs.isEmpty()
 
     val backgroundGradient = remember {
         Brush.verticalGradient(
@@ -238,33 +412,36 @@ fun MusicScreen(
                 TabButtonRow(
                     tabs = tabs, selectedIndex = selectedTabIndex, onTabSelected = {
                         selectedTabIndex = it
+                        selectedCategoryIndex = 0 // Reset category when tab changes
                     })
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (currentCategories != null) {
+                if (!currentCategories.isNullOrEmpty()) {
                     CategoryFilterChips(
                         categories = currentCategories,
                         selectedIndex = selectedCategoryIndex,
                         onCategorySelected = {
                             selectedCategoryIndex = it
                         })
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                if (currentCategories != null) {
+                    val categoryId = currentCategories.getOrNull(selectedCategoryIndex)?.id
+                    val songsForCategory = songs[categoryId]
 
-                    if (songs.isNotEmpty()) {
-                        songs[currentCategories[selectedCategoryIndex].id]?.let {
-                            MusicItemsGrid(
-                                items = it, navController = navController, viewModel = viewModel
-                            )
-
-
-                        }
+                    if (!songsForCategory.isNullOrEmpty()) {
+                        MusicItemsGrid(
+                            items = songsForCategory,
+                            navController = navController,
+                            viewModel = viewModel
+                        )
+                    } else {
+                        EmptyStateMessage("No songs in this category.")
                     }
 
+                } else if (!isLoading) {
+                    EmptyStateMessage("No categories found.")
                 }
             }
         }
@@ -564,12 +741,10 @@ private fun EnhancedCategoryFilterChip(
 
 @Composable
 fun MusicItemsGrid(
-    items: List<Song>, navController: NavController, viewModel: TabViewModel = viewModel()
+    items: List<Song>, navController: NavController, viewModel: TabViewModel
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Track which items have loaded (in order of loading, not grid order)
     var loadedItems by remember { mutableStateOf(setOf<Int>()) }
 
     LazyVerticalGrid(
@@ -581,28 +756,18 @@ fun MusicItemsGrid(
         itemsIndexed(items) { index, musicItem ->
             MusicItemCard(
                 musicItem = musicItem,
-                viewModel = viewModel, // Pass the shared viewModel here
                 isLoaded = index in loadedItems,
                 onImageLoaded = {
                     loadedItems = loadedItems + index
                 },
                 onClick = {
-                    coroutineScope.launch {
-                        val musicFilePath = retrieveMusicFile(
-                            context, TELEGRAM_BOT_TOKEN, musicItem.stream_id
-                        )
-
-                        if (musicFilePath != null) {
-                            viewModel.setCurrentSong(context, musicItem, musicFilePath)
-                            navController.navigate("player")
-                        } else {
-                            Log.e(
-                                "MusicItemsGrid",
-                                "Failed to fetch music file for ${musicItem.title}"
-                            )
-                            // Optionally show a snackbar / toast
-                        }
-                    }
+                    playSongFromPlaylist(
+                        context = context,
+                        viewModel = viewModel,
+                        selectedSong = musicItem,
+                        playlist = items,
+                        navController = navController
+                    )
                 })
         }
     }
@@ -610,13 +775,14 @@ fun MusicItemsGrid(
 
 @Composable
 fun MusicItemCard(
-    musicItem: Song, viewModel: TabViewModel, // Remove the default parameter
-    isLoaded: Boolean, onImageLoaded: (() -> Unit)? = null, onClick: () -> Unit
+    musicItem: Song,
+    isLoaded: Boolean,
+    onImageLoaded: (() -> Unit)? = null,
+    onClick: () -> Unit
 ) {
     val context = LocalContext.current
     var dominantColor by remember { mutableStateOf(Color(0xFF444444)) }
 
-    // Pop animation when item loads
     val scale by animateFloatAsState(
         targetValue = if (isLoaded) 1f else 0f, animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium
@@ -628,15 +794,20 @@ fun MusicItemCard(
     )
 
     LaunchedEffect(musicItem.id) {
-        val request = ImageRequest.Builder(context).data(IMAGE_BUCKET_URL + musicItem.id + ".webp")
-            .allowHardware(false).build()
-        val result = (context.imageLoader.execute(request) as? SuccessResult)?.drawable
-        result?.let { drawable ->
-            Palette.from(drawable.toBitmap()).generate { palette ->
-                palette?.getDominantColor(0xFF444444.toInt())?.let {
-                    dominantColor = Color(it)
+        try {
+            val request =
+                ImageRequest.Builder(context).data(IMAGE_BUCKET_URL + musicItem.id + ".webp")
+                    .allowHardware(false).build()
+            val result = (context.imageLoader.execute(request) as? SuccessResult)?.drawable
+            result?.let { drawable ->
+                Palette.from(drawable.toBitmap()).generate { palette ->
+                    palette?.getDominantColor(0xFF444444.toInt())?.let {
+                        dominantColor = Color(it)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            Log.e("MusicItemCard", "Failed to load palette", e)
         }
     }
 
@@ -657,7 +828,6 @@ fun MusicItemCard(
                 .clip(CircleShape)
                 .background(Color.Black), contentAlignment = Alignment.Center
         ) {
-            // Record rings
             Canvas(modifier = Modifier.size(180.dp)) {
                 val radius = size.minDimension / 2
                 for (i in 1..18) {
@@ -675,7 +845,6 @@ fun MusicItemCard(
                 )
             }
 
-            // Load image
             SubcomposeAsyncImage(
                 model = IMAGE_BUCKET_URL + musicItem.id + ".webp",
                 contentDescription = null,
@@ -684,6 +853,9 @@ fun MusicItemCard(
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
                 onSuccess = {
+                    onImageLoaded?.invoke()
+                },
+                onError = {
                     onImageLoaded?.invoke()
                 })
         }

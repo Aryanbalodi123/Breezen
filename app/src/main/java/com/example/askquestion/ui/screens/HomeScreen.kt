@@ -86,7 +86,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.askquestion.R
 import com.example.askquestion.network.Song
-import com.example.askquestion.playGetMusicFile
+import com.example.askquestion.playSongFromPlaylist
 import com.example.askquestion.theme.AppColors
 import com.example.askquestion.theme.CustomTypography
 import com.example.askquestion.theme.FunnelDisplayFamily
@@ -118,7 +118,7 @@ fun AppBackground(): Brush {
 fun HomeContent(navController: NavController, viewModel: TabViewModel = viewModel(), homeViewModel: HomeViewModel = viewModel()) {
 
     LaunchedEffect(Unit) {
-        if (viewModel.songs.value.isEmpty()) {
+        if (viewModel.tabs.value.isEmpty()) {
             viewModel.fetchSongData()
         }
     }
@@ -293,8 +293,8 @@ fun HeaderSection(
     isLoading: Boolean,
     username: String
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val allSongs by viewModel.allSongs
 
     Box(
         modifier = Modifier
@@ -364,8 +364,9 @@ fun HeaderSection(
             Spacer(Modifier.height(24.dp))
             IconButton(
                 onClick = {
-                    if (!isLoading && song != null) {
-                        playGetMusicFile(context, viewModel, song, coroutineScope, navController)
+                    // **FIXED**: Use new helper
+                    if (!isLoading && song != null && allSongs.isNotEmpty()) {
+                        playSongFromPlaylist(context, viewModel, song, allSongs, navController)
                     }
                 },
                 enabled = !isLoading && song != null,
@@ -829,8 +830,8 @@ fun FeatureSectionCard1(
     navController: NavController,
     isLoading: Boolean
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val allSongs by viewModel.allSongs
 
     Column(
         modifier = Modifier
@@ -903,8 +904,9 @@ fun FeatureSectionCard1(
 
                 IconButton(
                     onClick = {
-                        if (!isLoading && song != null) {
-                            playGetMusicFile(context, viewModel, song, coroutineScope, navController)
+                        // **FIXED**: Use new helper
+                        if (!isLoading && song != null && allSongs.isNotEmpty()) {
+                            playSongFromPlaylist(context, viewModel, song, allSongs, navController)
                         }
                     },
                     enabled = !isLoading && song != null,
@@ -945,8 +947,8 @@ fun FeatureSectionCard2(
     navController: NavController,
     isLoading: Boolean
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val allSongs by viewModel.allSongs
 
     Column(
         modifier = Modifier
@@ -1051,15 +1053,15 @@ fun FeatureSectionCard2(
 
                 IconButton(
                     onClick = {
-                        if (!isLoading && song != null) {
-                            playGetMusicFile(
+                        // **FIXED**: Use new helper
+                        if (!isLoading && song != null && allSongs.isNotEmpty()) {
+                            playSongFromPlaylist(
                                 context,
                                 viewModel,
                                 song,
-                                coroutineScope,
+                                allSongs,
                                 navController
                             )
-                            navController.navigate("player")
                         }
                     },
                     enabled = !isLoading && song != null,
