@@ -293,7 +293,8 @@ private fun createOrbitShapes(): List<OrbitingShape> {
         0xFF8C8C8C, 0xFF9E9E9E, 0xFFB0B0B0, 0xFFC4C4C4
     )
     val radii = listOf(150f, 210f, 279f, 358f, 449f, 554f, 675f, 814f, 974f, 1158f, 1370f, 1614f)
-    val speeds = listOf(1.0f, 0.91f, 0.82f, 0.73f, 0.64f, 0.55f, 0.46f, 0.37f, 0.28f, 0.19f, 0.12f, 0.06f)
+    val speeds =
+        listOf(1.0f, 0.91f, 0.82f, 0.73f, 0.64f, 0.55f, 0.46f, 0.37f, 0.28f, 0.19f, 0.12f, 0.06f)
     val shapesPerOrbit = listOf(4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
     return buildList {
@@ -349,7 +350,8 @@ fun GalaxyAnimation(modifier: Modifier = Modifier, shapes: List<OrbitingShape>) 
         val centerY = -size.height * 0.2f
         val uniqueRadii = shapes.map { it.radius }.distinct().sorted()
         uniqueRadii.forEachIndexed { index, radius ->
-            val orbitColor = shapes.firstOrNull { it.radius == radius }?.orbitLineColor ?: Color.Gray
+            val orbitColor =
+                shapes.firstOrNull { it.radius == radius }?.orbitLineColor ?: Color.Gray
             drawOrbitLine(orbitColor.copy(alpha = 0.5f), radius, centerX, centerY)
         }
         shapes.forEach { shape ->
@@ -367,7 +369,12 @@ fun DrawScope.drawOrbitLine(color: Color, radius: Float, centerX: Float, centerY
     )
 }
 
-fun DrawScope.drawOrbitingShape(shape: OrbitingShape, angle: Float, centerX: Float, centerY: Float) {
+fun DrawScope.drawOrbitingShape(
+    shape: OrbitingShape,
+    angle: Float,
+    centerX: Float,
+    centerY: Float
+) {
     val currentAngle = Math.toRadians(
         ((angle * shape.speedMultiplier * shape.direction) + shape.angleOffset).toDouble()
     )
@@ -378,6 +385,7 @@ fun DrawScope.drawOrbitingShape(shape: OrbitingShape, angle: Float, centerX: Flo
         ShapeType.FILLED_CIRCLE -> {
             drawCircle(color = shape.color, radius = shape.size, center = Offset(x, y))
         }
+
         ShapeType.OUTLINED_CIRCLE -> {
             drawCircle(color = Color.Black, radius = shape.size, center = Offset(x, y))
             drawCircle(
@@ -387,6 +395,7 @@ fun DrawScope.drawOrbitingShape(shape: OrbitingShape, angle: Float, centerX: Flo
                 style = Stroke(width = 2.5.dp.toPx())
             )
         }
+
         ShapeType.RHOMBUS -> {
             val widthHalf = shape.size * 0.7f
             val heightHalf = shape.size * 1.4f

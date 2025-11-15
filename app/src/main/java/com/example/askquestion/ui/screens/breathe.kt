@@ -87,6 +87,7 @@ data class BreathingTechnique(
     val instructions: List<String>,
     val benefits: String
 )
+
 @Composable
 fun BreatheScreen(navController: NavController) {
 
@@ -304,8 +305,7 @@ fun BreatheScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top =  24.dp , bottom = 100.dp , start = 24.dp , end = 24.dp)
-                ,
+                .padding(top = 24.dp, bottom = 100.dp, start = 24.dp, end = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(80.dp))
@@ -353,7 +353,8 @@ fun BreatheScreen(navController: NavController) {
 
         // Technique selector dialog
         if (showTechniqueSelector) {
-            TechniqueSelectorDialog(techniques = breathingTechniques,
+            TechniqueSelectorDialog(
+                techniques = breathingTechniques,
                 selectedTechnique = selectedTechnique,
                 onTechniqueSelected = { technique ->
                     selectedTechnique = technique
@@ -545,8 +546,6 @@ fun EnhancedControlCard(
     val currentMinutes = remainingTime / 60
 
     // Use a key to track when seconds actually change to prevent unnecessary animations
-    val secondsKey by remember { derivedStateOf { currentSeconds } }
-    val minutesKey by remember { derivedStateOf { currentMinutes } }
 
     // Animate only when the actual values change
     val animatedSeconds by animateIntAsState(
@@ -563,8 +562,7 @@ fun EnhancedControlCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            ,
+            .height(200.dp),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
@@ -579,9 +577,7 @@ fun EnhancedControlCard(
                             Color.White.copy(alpha = 0.18f),
                             Color.White.copy(alpha = 0.08f)
                         )
-                    )
-
-                    ,
+                    ),
                     RoundedCornerShape(28.dp)
                 )
                 .border(
@@ -605,8 +601,10 @@ fun EnhancedControlCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
-                        .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onTimerClick() }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = ripple(),
+                        ) { onTimerClick() }
                         .padding(start = 10.dp)
                 ) {
                     Column(
@@ -621,7 +619,9 @@ fun EnhancedControlCard(
                                 text = String.format("%02d", animatedSeconds),
                                 style = CustomTypography.displayLarge.copy(fontSize = 70.sp),
                                 color = Color.White,
-                                modifier = Modifier.alignByBaseline().align(Alignment.Top)
+                                modifier = Modifier
+                                    .alignByBaseline()
+                                    .align(Alignment.Top)
                             )
                             Text(
                                 text = "s",
@@ -641,7 +641,9 @@ fun EnhancedControlCard(
                                 text = String.format("%02d", animatedMinutes),
                                 style = CustomTypography.displayLarge.copy(fontSize = 70.sp),
                                 color = Color.White,
-                                modifier = Modifier.alignByBaseline().align(Alignment.Top)
+                                modifier = Modifier
+                                    .alignByBaseline()
+                                    .align(Alignment.Top)
                             )
                             Text(
                                 text = "m",
@@ -662,8 +664,10 @@ fun EnhancedControlCard(
                 ) {
                     // Technique selector - aligned to top
                     Card(
-                        modifier = Modifier.clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onTechniqueClick() },
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = ripple(),
+                        ) { onTechniqueClick() },
                         colors = CardDefaults.cardColors(
                             containerColor = Color.White.copy(alpha = 0.12f)
                         ),
@@ -684,8 +688,10 @@ fun EnhancedControlCard(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onTechniqueClick() },
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = ripple(),
+                                    ) { onTechniqueClick() },
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color.Black.copy(alpha = 0.12f)
                                 ),
@@ -708,8 +714,10 @@ fun EnhancedControlCard(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .fillMaxWidth()
-                                .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onStartClick() },
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = ripple(),
+                                ) { onStartClick() },
                             colors = CardDefaults.cardColors(
                                 containerColor = Color.Transparent
                             ),
@@ -772,8 +780,10 @@ fun EnhancedControlCard(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .weight(1f) // Take equal width
-                                    .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onPauseClick() },
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = ripple(),
+                                    ) { onPauseClick() },
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color.Transparent
                                 ),
@@ -820,7 +830,7 @@ fun EnhancedControlCard(
                                     .weight(1f) // Take equal width
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
-    indication = ripple()
+                                        indication = ripple()
                                     ) { onStopClick() },
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color.Transparent
@@ -957,7 +967,8 @@ fun TechniqueSelectorDialog(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(techniques) { technique ->
-                            EnhancedTechniqueItem(technique = technique,
+                            EnhancedTechniqueItem(
+                                technique = technique,
                                 isSelected = technique.id == selectedTechnique.id,
                                 onClick = { onTechniqueSelected(technique) },
                                 onInfoClick = { onInfoClick(technique) })
@@ -976,8 +987,10 @@ fun EnhancedTechniqueItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onClick() },
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+            ) { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) Color(0xFF4ECDC4).copy(alpha = 0.25f)
             else Color.White.copy(alpha = 0.08f)
@@ -1129,8 +1142,10 @@ fun TechniqueInfoDialog(
                                         Color.White.copy(alpha = 0.3f),
                                         CircleShape
                                     )
-                                    .clickable(    interactionSource = remember { MutableInteractionSource() },
-    indication = ripple(),) { onDismiss() }
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = ripple(),
+                                    ) { onDismiss() }
                                     .padding(8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -1215,6 +1230,7 @@ fun TechniqueInfoDialog(
         }
     }
 }
+
 @Composable
 fun BreathingPatternGrid(
     phases: List<Triple<String, String, Color>>,
@@ -1229,6 +1245,7 @@ fun BreathingPatternGrid(
                 // Single item centered
                 InstructionCirclePattern(phases[0].first, phases[0].second, phases[0].third)
             }
+
             2 -> {
                 // Two items in one row
                 Row(
@@ -1240,6 +1257,7 @@ fun BreathingPatternGrid(
                     }
                 }
             }
+
             3 -> {
                 // Three items in one row
                 Row(
@@ -1251,6 +1269,7 @@ fun BreathingPatternGrid(
                     }
                 }
             }
+
             4 -> {
                 // 2x2 grid
                 Column(
@@ -1273,6 +1292,7 @@ fun BreathingPatternGrid(
                     }
                 }
             }
+
             5 -> {
                 // 3 items in first row, 2 items centered in second row
                 Column(
@@ -1295,6 +1315,7 @@ fun BreathingPatternGrid(
                     }
                 }
             }
+
             6 -> {
                 // 3x2 grid
                 Column(
@@ -1319,6 +1340,7 @@ fun BreathingPatternGrid(
                     }
                 }
             }
+
             else -> {
                 // For more than 6 items, use a flexible grid with max 3 items per row
                 val rows = phases.chunked(3)
@@ -1483,7 +1505,8 @@ fun TimerSettingDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Minutes input
-                        OutlinedTextField(value = minutes,
+                        OutlinedTextField(
+                            value = minutes,
                             onValueChange = {
                                 if (it.all { char -> char.isDigit() } && it.length <= 2) {
                                     minutes = it
@@ -1514,10 +1537,11 @@ fun TimerSettingDialog(
                                 fontSize = 24.sp
                             ),
 
-                        )
+                            )
 
                         // Seconds input
-                        OutlinedTextField(value = seconds,
+                        OutlinedTextField(
+                            value = seconds,
                             onValueChange = {
                                 if (it.all { char -> char.isDigit() } && it.length <= 2) {
                                     val sec = it.toIntOrNull() ?: 0
@@ -1560,25 +1584,27 @@ fun TimerSettingDialog(
                             "1 min" to 60, "5 min" to 300, "10 min" to 600, "15 min" to 900
                         ).forEach { (label, time) ->
 
-                               Button(
-                                   onClick = {
-                                       minutes = (time / 60).toString()
-                                       seconds = (time % 60).toString()
-                                   },
-                                   modifier = Modifier.fillMaxWidth().height(36.dp),
-                                   colors = ButtonDefaults.buttonColors(
-                                       containerColor = Color.White.copy(alpha = 0.15f)
-                                   ),
-                                   shape = RoundedCornerShape(8.dp)
-                               ) {
-                                   Text(
-                                       text = label,
-                                       color = Color.White,
-                                       style = CustomTypography.bodySmall.copy(
-                                           fontSize = 12.sp
-                                       )
-                                   )
-                               }
+                            Button(
+                                onClick = {
+                                    minutes = (time / 60).toString()
+                                    seconds = (time % 60).toString()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(36.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.White.copy(alpha = 0.15f)
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = Color.White,
+                                    style = CustomTypography.bodySmall.copy(
+                                        fontSize = 12.sp
+                                    )
+                                )
+                            }
 
                         }
                     }

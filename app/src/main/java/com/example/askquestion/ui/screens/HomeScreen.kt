@@ -115,7 +115,11 @@ fun AppBackground(): Brush {
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun HomeContent(navController: NavController, viewModel: TabViewModel , homeViewModel: HomeViewModel = viewModel()) {
+fun HomeContent(
+    navController: NavController,
+    viewModel: TabViewModel,
+    homeViewModel: HomeViewModel = viewModel()
+) {
 
     LaunchedEffect(Unit) {
         if (viewModel.tabs.value.isEmpty()) {
@@ -300,7 +304,7 @@ fun HeaderSection(
         modifier = Modifier
             .fillMaxWidth()
             .height(400.dp)
-            .clip(shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomEnd = 120.dp))
+            .clip(shape = RoundedCornerShape(bottomEnd = 120.dp))
     ) {
         Row {
             repeat(5) {
@@ -372,7 +376,7 @@ fun HeaderSection(
                 enabled = !isLoading && song != null,
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clip(CircleShape)
                     .background(
                         if (isLoading) Color.White.copy(alpha = 0.3f) else Color.White
                     )
@@ -431,10 +435,22 @@ fun AffirmationSection() {
     val affirmations = remember {
         mutableStateListOf(
             Affirmation(1, "I am capable of achieving my goals", R.drawable.affirmation_card_01),
-            Affirmation(2, "I choose to be happy and love myself today", R.drawable.affirmation_card_02),
+            Affirmation(
+                2,
+                "I choose to be happy and love myself today",
+                R.drawable.affirmation_card_02
+            ),
             Affirmation(3, "My potential to succeed is infinite", R.drawable.affirmation_card_03),
-            Affirmation(4, "I am resilient and can handle anything", R.drawable.affirmation_card_04),
-            Affirmation(5, "I radiate positivity and attract good things", R.drawable.affirmation_card_05),
+            Affirmation(
+                4,
+                "I am resilient and can handle anything",
+                R.drawable.affirmation_card_04
+            ),
+            Affirmation(
+                5,
+                "I radiate positivity and attract good things",
+                R.drawable.affirmation_card_05
+            ),
             Affirmation(6, "Today I choose joy and gratitude", R.drawable.affirmation_card_06),
             Affirmation(7, "I am worthy of love and respect", R.drawable.affirmation_card_07),
             Affirmation(8, "I trust in my journey and timing", R.drawable.affirmation_card_08)
@@ -503,7 +519,8 @@ fun AffirmationCard(
     val offsetY = remember { Animatable(0f) }
     val rotation = remember { Animatable(0f) }
 
-    val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+    val screenWidthPx =
+        with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
     val dismissThreshold = screenWidthPx * 0.4f
 
     val cardModifier = if (isTopCard) {
@@ -522,26 +539,36 @@ fun AffirmationCard(
                         val shouldDismiss = kotlin.math.abs(offsetX.value) > dismissThreshold
 
                         if (shouldDismiss) {
-                            val targetX = if (offsetX.value > 0) screenWidthPx * 1.5f else -screenWidthPx * 1.5f
+                            val targetX =
+                                if (offsetX.value > 0) screenWidthPx * 1.5f else -screenWidthPx * 1.5f
                             launch {
                                 offsetX.animateTo(
                                     targetValue = targetX,
-                                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                                    animationSpec = tween(
+                                        durationMillis = 300,
+                                        easing = FastOutSlowInEasing
+                                    )
                                 )
                             }
                             launch {
                                 offsetY.animateTo(
                                     targetValue = offsetY.value + 100f,
-                                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                                    animationSpec = tween(
+                                        durationMillis = 300,
+                                        easing = FastOutSlowInEasing
+                                    )
                                 )
                             }
                             launch {
                                 rotation.animateTo(
                                     targetValue = if (offsetX.value > 0) 30f else -30f,
-                                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                                    animationSpec = tween(
+                                        durationMillis = 300,
+                                        easing = FastOutSlowInEasing
+                                    )
                                 )
                             }
-                            kotlinx.coroutines.delay(300)
+                            delay(300)
                             onSwipe()
                         } else {
                             // Animate back to center if not dismissed
@@ -912,7 +939,7 @@ fun FeatureSectionCard1(
                     enabled = !isLoading && song != null,
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .clip(CircleShape)
                         .background(
                             if (isLoading) {
                                 Brush.linearGradient(
@@ -1174,7 +1201,7 @@ fun ChatBot() {
                 onClick = { /* handle send */ },
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
                             listOf(Color(0xFF3A9F8F), Color(0xFF66E6C9))

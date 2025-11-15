@@ -32,7 +32,9 @@ data class PlayerUiState(
     val streamUrl: String = "",
     val loadState: PlayerLoadState = PlayerLoadState.INITIAL,
     val isBuffering: Boolean = false,
-    val dominantColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF444444),
+    val dominantColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(
+        0xFF444444
+    ),
     val nextUpSong: Song? = null,
     val nextStreamUrl: String = ""
 )
@@ -74,10 +76,11 @@ class TabViewModel : ViewModel() {
                 )
                 _tabs.value = resultTab
 
-                val resultCategory = com.example.askquestion.network.RetroFitClient.api.getCategories(
-                    apiKey = com.example.askquestion.network.SUPABASE_API_KEY_ANON,
-                    authorization = "Bearer ${com.example.askquestion.network.SUPABASE_API_KEY_ANON}"
-                )
+                val resultCategory =
+                    com.example.askquestion.network.RetroFitClient.api.getCategories(
+                        apiKey = com.example.askquestion.network.SUPABASE_API_KEY_ANON,
+                        authorization = "Bearer ${com.example.askquestion.network.SUPABASE_API_KEY_ANON}"
+                    )
                 _categories.value = resultCategory.groupBy { it.tab_id }
 
                 val resultSong = com.example.askquestion.network.RetroFitClient.api.getSongs(
@@ -113,7 +116,12 @@ class TabViewModel : ViewModel() {
         isShuffleEnabled = !isShuffleEnabled
         viewModelScope.launch {
             val nextSong = getNextUpSong()
-            val nextStreamUrl = nextSong?.let { getMusicStreamUrl(com.example.askquestion.network.TELEGRAM_BOT_TOKEN, it.stream_id) } ?: ""
+            val nextStreamUrl = nextSong?.let {
+                getMusicStreamUrl(
+                    com.example.askquestion.network.TELEGRAM_BOT_TOKEN,
+                    it.stream_id
+                )
+            } ?: ""
             _playerUiState.value = _playerUiState.value.copy(
                 nextUpSong = nextSong,
                 nextStreamUrl = nextStreamUrl
@@ -129,7 +137,12 @@ class TabViewModel : ViewModel() {
         }
         viewModelScope.launch {
             val nextSong = getNextUpSong()
-            val nextStreamUrl = nextSong?.let { getMusicStreamUrl(com.example.askquestion.network.TELEGRAM_BOT_TOKEN, it.stream_id) } ?: ""
+            val nextStreamUrl = nextSong?.let {
+                getMusicStreamUrl(
+                    com.example.askquestion.network.TELEGRAM_BOT_TOKEN,
+                    it.stream_id
+                )
+            } ?: ""
             _playerUiState.value = _playerUiState.value.copy(
                 nextUpSong = nextSong,
                 nextStreamUrl = nextStreamUrl
@@ -152,7 +165,8 @@ class TabViewModel : ViewModel() {
                     .data(com.example.askquestion.network.IMAGE_BUCKET_URL + song.id + ".webp")
                     .allowHardware(false)
                     .build()
-                val result = (context.imageLoader.execute(request) as? coil.request.SuccessResult)?.drawable
+                val result =
+                    (context.imageLoader.execute(request) as? coil.request.SuccessResult)?.drawable
                 val color = result?.let { drawable ->
                     androidx.palette.graphics.Palette.from(drawable.toBitmap()).generate()
                         ?.getDominantColor(0xFF444444.toInt())
@@ -162,7 +176,9 @@ class TabViewModel : ViewModel() {
                 _playerUiState.value = _playerUiState.value.copy(dominantColor = color)
             } catch (e: Exception) {
                 Log.e("TabViewModel", "Dominant color precache failed", e)
-                _playerUiState.value = _playerUiState.value.copy(dominantColor = androidx.compose.ui.graphics.Color(0xFF444444))
+                _playerUiState.value = _playerUiState.value.copy(
+                    dominantColor = androidx.compose.ui.graphics.Color(0xFF444444)
+                )
             }
         }
     }
@@ -176,24 +192,40 @@ class TabViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 // Get stream URL (this will use the in-memory cache if present)
-                val streamUrlDeferred = async { getMusicStreamUrl(com.example.askquestion.network.TELEGRAM_BOT_TOKEN, song.stream_id) }
+                val streamUrlDeferred = async {
+                    getMusicStreamUrl(
+                        com.example.askquestion.network.TELEGRAM_BOT_TOKEN,
+                        song.stream_id
+                    )
+                }
                 val nextSongDeferred = async { getNextUpSong() }
 
                 val musicStreamUrl = streamUrlDeferred.await()
                 val nextSong = nextSongDeferred.await()
 
                 // Attempt to find a local cached file for current song (non-blocking check)
-                val localFile = MusicCacheManager.getCachedFile(context, "tg_${song.stream_id}.opus").takeIf { it.exists() }?.absolutePath
+                val localFile =
+                    MusicCacheManager.getCachedFile(context, "tg_${song.stream_id}.opus")
+                        .takeIf { it.exists() }?.absolutePath
 
                 // Prefetch next song in background (disk cache)
                 nextSong?.let { ns ->
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
-                            val cachedNextUrl = MusicCacheManager.getCachedStreamUrl(ns.stream_id) ?: getMusicStreamUrl(com.example.askquestion.network.TELEGRAM_BOT_TOKEN, ns.stream_id)
+                            val cachedNextUrl = MusicCacheManager.getCachedStreamUrl(ns.stream_id)
+                                ?: getMusicStreamUrl(
+                                    com.example.askquestion.network.TELEGRAM_BOT_TOKEN,
+                                    ns.stream_id
+                                )
                             if (!cachedNextUrl.isNullOrEmpty()) {
-                                MusicCacheManager.downloadIfMissing(context, cachedNextUrl, "tg_${ns.stream_id}.opus")
+                                MusicCacheManager.downloadIfMissing(
+                                    context,
+                                    cachedNextUrl,
+                                    "tg_${ns.stream_id}.opus"
+                                )
                             }
-                        } catch (ignored: Exception) { }
+                        } catch (ignored: Exception) {
+                        }
                     }
                 }
 
@@ -201,7 +233,10 @@ class TabViewModel : ViewModel() {
                 val effectiveUrl = localFile ?: musicStreamUrl ?: ""
 
                 val nextStreamUrl = nextSong?.let {
-                    MusicCacheManager.getCachedStreamUrl(it.stream_id) ?: getMusicStreamUrl(com.example.askquestion.network.TELEGRAM_BOT_TOKEN, it.stream_id)
+                    MusicCacheManager.getCachedStreamUrl(it.stream_id) ?: getMusicStreamUrl(
+                        com.example.askquestion.network.TELEGRAM_BOT_TOKEN,
+                        it.stream_id
+                    )
                 } ?: ""
 
                 if (effectiveUrl.isNotEmpty()) {

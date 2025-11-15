@@ -178,7 +178,8 @@ fun SignInScreen(
                             val image = if (passwordVisible)
                                 Icons.Outlined.Visibility
                             else Icons.Outlined.VisibilityOff
-                            val description = if (passwordVisible) "Hide password" else "Show password"
+                            val description =
+                                if (passwordVisible) "Hide password" else "Show password"
 
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(

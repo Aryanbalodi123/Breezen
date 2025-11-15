@@ -174,6 +174,7 @@ class ChatViewModel : ViewModel() {
         messages.clear()
     }
 }
+
 @Composable
 fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
     val messages = viewModel.messages
@@ -268,8 +269,9 @@ fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
         }
     }
 }
+
 @Composable
-private fun TopHeader(onNewChatClicked: () -> Unit,navController: NavController) {
+private fun TopHeader(onNewChatClicked: () -> Unit, navController: NavController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -277,10 +279,13 @@ private fun TopHeader(onNewChatClicked: () -> Unit,navController: NavController)
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Left button
-        ActionButton(icon = Icons.Default.ArrowBack, contentDescription = "Back", onClick = {
+        ActionButton(
+            icon = Icons.Default.ArrowBack, contentDescription = "Back",
+            onClick = {
 
-            navController.popBackStack()},
-            )
+                navController.popBackStack()
+            },
+        )
 
         // Center content
         Row(
@@ -327,20 +332,20 @@ private fun TopHeader(onNewChatClicked: () -> Unit,navController: NavController)
 
 @Composable
 private fun EmptyStateLarge() {
-   Box{
-       Column(
-           modifier = Modifier
-               .fillMaxSize()
-               .padding(24.dp),
-           horizontalAlignment = Alignment.CenterHorizontally,
-           verticalArrangement = Arrangement.Center
-       ) {
+    Box {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
 
-           Spacer(Modifier.height(24.dp))
-           Text("Hi there!", style = CustomTypography.displayLarge, color = Color.White)
-           Text("How can I help you?", style = CustomTypography.titleMedium, color = Color.White)
-       }
-   }
+            Spacer(Modifier.height(24.dp))
+            Text("Hi there!", style = CustomTypography.displayLarge, color = Color.White)
+            Text("How can I help you?", style = CustomTypography.titleMedium, color = Color.White)
+        }
+    }
 }
 
 @Composable

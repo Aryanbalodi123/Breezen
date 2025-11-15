@@ -115,7 +115,6 @@ sealed class PlayerEvent {
 }
 
 
-
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
@@ -231,7 +230,8 @@ fun PlayerScreen(
             while (isActive) {
                 try {
                     currentTime = player.currentPosition
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
                 delay(500)
             }
         } finally {
@@ -297,7 +297,8 @@ fun PlayerScreen(
             onSeek = { t ->
                 try {
                     player.seekTo(t)
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             },
             onEvent = { event ->
                 when (event) {
@@ -370,7 +371,11 @@ fun PlayerTransitionLoader(modifier: Modifier = Modifier) {
         iterations = LottieConstants.IterateForever
     )
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        LottieAnimation(composition = composition, progress = { progress }, modifier = Modifier.size(250.dp))
+        LottieAnimation(
+            composition = composition,
+            progress = { progress },
+            modifier = Modifier.size(250.dp)
+        )
     }
 }
 
@@ -404,7 +409,8 @@ fun PlayerContent(
     // 🔥 **FIX**: Use 0L for progress and time text while shimmering
     val effectiveCurrentTime = if (showShimmer) 0L else currentTime
 
-    val songDurationMs = if ((currentSong?.duration ?: 0) > 0) currentSong!!.duration * 1000L else 1000L
+    val songDurationMs =
+        if ((currentSong?.duration ?: 0) > 0) currentSong!!.duration * 1000L else 1000L
     val (minuteTotal, secondTotal) = minSec(songDurationMs)
     // 🔥 **FIX**: Use effectiveCurrentTime
     val (minuteCurrent, secondCurrent) = minSec(effectiveCurrentTime)
@@ -422,7 +428,9 @@ fun PlayerContent(
         ) {
             // Top bar
             Box(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
                 IconButton(
                     onClick = onBack,
@@ -445,7 +453,10 @@ fun PlayerContent(
             Spacer(modifier = Modifier.height(48.dp))
 
             // Progress + Image
-            Box(modifier = Modifier.align(Alignment.CenterHorizontally), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                contentAlignment = Alignment.Center
+            ) {
                 MusicProgress(
                     // 🔥 **FIX**: Use effectiveCurrentTime
                     currentTime = effectiveCurrentTime,
@@ -508,7 +519,10 @@ fun PlayerContent(
                 Text(
                     text = currentSong?.title ?: "Loading...",
                     color = AppColors.TextPrimary,
-                    style = CustomTypography.headlineLarge.copy(fontSize = 30.sp, fontWeight = FontWeight.Bold),
+                    style = CustomTypography.headlineLarge.copy(
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
                     modifier = Modifier.padding(horizontal = 24.dp),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -647,8 +661,16 @@ fun MusicProgress(currentTime: Long, duration: Long, strokeColor: Color, onSeek:
             val arcRadius = diameter / 2f
             val tipX = centerX + (arcRadius * cos(angleInRadian)).toFloat()
             val tipY = centerY + (arcRadius * sin(angleInRadian)).toFloat()
-            drawCircle(color = strokeColor.copy(alpha = 0.12f), radius = (strokeWidth / 2f + 2.dp.toPx()) * 1.4f, center = Offset(tipX, tipY))
-            drawCircle(color = strokeColor, radius = strokeWidth / 2f + 2.dp.toPx(), center = Offset(tipX, tipY))
+            drawCircle(
+                color = strokeColor.copy(alpha = 0.12f),
+                radius = (strokeWidth / 2f + 2.dp.toPx()) * 1.4f,
+                center = Offset(tipX, tipY)
+            )
+            drawCircle(
+                color = strokeColor,
+                radius = strokeWidth / 2f + 2.dp.toPx(),
+                center = Offset(tipX, tipY)
+            )
         }
     }
 }
@@ -661,7 +683,8 @@ private fun calculateProgressFromOffset(offset: Offset, size: IntSize): Float {
     val center = Offset(size.width / 2f, size.height / 2f)
     val touchVector = offset - center
 
-    val angle = (Math.toDegrees(atan2(touchVector.y.toDouble(), touchVector.x.toDouble())).toFloat() + 360f) % 360f
+    val angle = (Math.toDegrees(atan2(touchVector.y.toDouble(), touchVector.x.toDouble()))
+        .toFloat() + 360f) % 360f
     val relative = (angle - startAngle + 360f) % 360f
     return if (relative <= sweep) {
         (relative / sweep).coerceIn(0f, 1f)
@@ -676,14 +699,24 @@ private fun calculateProgressFromOffset(offset: Offset, size: IntSize): Float {
 
 @Composable
 fun NextUpCard(hazeState: HazeState, nextUpSong: Song?) {
-    AnimatedVisibility(visible = nextUpSong != null, enter = fadeIn(animationSpec = tween(600)), exit = fadeOut(animationSpec = tween(300))) {
+    AnimatedVisibility(
+        visible = nextUpSong != null,
+        enter = fadeIn(animationSpec = tween(600)),
+        exit = fadeOut(animationSpec = tween(300))
+    ) {
         if (nextUpSong == null) return@AnimatedVisibility
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .hazeEffect(hazeState, style = HazeStyle(blurRadius = 25.dp, tint = HazeTint(Color.White.copy(alpha = 0.15f))))
+                .hazeEffect(
+                    hazeState,
+                    style = HazeStyle(
+                        blurRadius = 25.dp,
+                        tint = HazeTint(Color.White.copy(alpha = 0.15f))
+                    )
+                )
                 .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
                 .padding(12.dp)
         ) {
@@ -692,16 +725,39 @@ fun NextUpCard(hazeState: HazeState, nextUpSong: Song?) {
                     model = IMAGE_BUCKET_URL + nextUpSong.id + ".webp",
                     contentDescription = "Next track cover",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(10.dp))
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(10.dp))
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "NEXT UP", style = CustomTypography.bodySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), color = AppColors.PrimaryGreen, fontSize = 11.sp)
+                    Text(
+                        text = "NEXT UP",
+                        style = CustomTypography.bodySmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = AppColors.PrimaryGreen,
+                        fontSize = 11.sp
+                    )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = nextUpSong.title, style = CustomTypography.bodyMedium, color = AppColors.TextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = nextUpSong.artist ?: "Unknown", style = CustomTypography.bodySmall, color = AppColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        text = nextUpSong.title,
+                        style = CustomTypography.bodyMedium,
+                        color = AppColors.TextPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = nextUpSong.artist ?: "Unknown",
+                        style = CustomTypography.bodySmall,
+                        color = AppColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
@@ -717,28 +773,67 @@ fun MusicPlayerControls(
     onEvent: (PlayerEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth()) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth()
+    ) {
         IconButton(onClick = { onEvent(PlayerEvent.ToggleShuffle) }) {
-            Icon(painter = painterResource(R.drawable.shuffle), contentDescription = "Toggle shuffle", modifier = Modifier.size(24.dp), tint = if (isShuffleEnabled) AppColors.PrimaryGreen else Color.White.copy(alpha = 0.7f))
+            Icon(
+                painter = painterResource(R.drawable.shuffle),
+                contentDescription = "Toggle shuffle",
+                modifier = Modifier.size(24.dp),
+                tint = if (isShuffleEnabled) AppColors.PrimaryGreen else Color.White.copy(alpha = 0.7f)
+            )
         }
         IconButton(onClick = { onEvent(PlayerEvent.Previous) }) {
-            Icon(painter = painterResource(R.drawable.set_backward), contentDescription = "Previous track", modifier = Modifier.size(28.dp), tint = Color.White)
+            Icon(
+                painter = painterResource(R.drawable.set_backward),
+                contentDescription = "Previous track",
+                modifier = Modifier.size(28.dp),
+                tint = Color.White
+            )
         }
-        Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.White).clickable { onEvent(PlayerEvent.PlayPause) }, contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .clickable { onEvent(PlayerEvent.PlayPause) }, contentAlignment = Alignment.Center
+        ) {
             if (isBuffering) {
-                CircularProgressIndicator(modifier = Modifier.size(32.dp), color = Color.Black, strokeWidth = 3.dp)
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    color = Color.Black,
+                    strokeWidth = 3.dp
+                )
             } else {
-                Icon(painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play), contentDescription = if (isPlaying) "Pause" else "Play", tint = Color.Black, modifier = Modifier.size(32.dp))
+                Icon(
+                    painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    tint = Color.Black,
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
         IconButton(onClick = { onEvent(PlayerEvent.Next) }) {
-            Icon(painter = painterResource(R.drawable.set_forward), contentDescription = "Next track", modifier = Modifier.size(28.dp), tint = Color.White)
+            Icon(
+                painter = painterResource(R.drawable.set_forward),
+                contentDescription = "Next track",
+                modifier = Modifier.size(28.dp),
+                tint = Color.White
+            )
         }
         IconButton(onClick = { onEvent(PlayerEvent.ToggleRepeat) }) {
-            Icon(painter = painterResource(if (repeatMode == TabViewModel.RepeatMode.ONE) R.drawable.repeat_one else R.drawable.repeat), contentDescription = "Toggle repeat mode", modifier = Modifier.size(24.dp), tint = when (repeatMode) {
-                TabViewModel.RepeatMode.OFF -> Color.White.copy(alpha = 0.7f)
-                TabViewModel.RepeatMode.ALL, TabViewModel.RepeatMode.ONE -> AppColors.PrimaryGreen
-            })
+            Icon(
+                painter = painterResource(if (repeatMode == TabViewModel.RepeatMode.ONE) R.drawable.repeat_one else R.drawable.repeat),
+                contentDescription = "Toggle repeat mode",
+                modifier = Modifier.size(24.dp),
+                tint = when (repeatMode) {
+                    TabViewModel.RepeatMode.OFF -> Color.White.copy(alpha = 0.7f)
+                    TabViewModel.RepeatMode.ALL, TabViewModel.RepeatMode.ONE -> AppColors.PrimaryGreen
+                }
+            )
         }
     }
 }

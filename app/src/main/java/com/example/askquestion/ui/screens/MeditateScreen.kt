@@ -1,4 +1,3 @@
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +41,6 @@ import kotlin.math.absoluteValue
 fun MeditateScreen(navController: NavController) {
     val totalCards = 5
     val pagerState = rememberPagerState(pageCount = { totalCards })
-    var starIcon by remember { mutableStateOf(Icons.Default.StarOutline) }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -84,49 +82,58 @@ fun MeditateScreen(navController: NavController) {
                     contentScale = ContentScale.Crop
                 )
 
-               Column(Modifier.fillMaxSize(), horizontalAlignment  = Alignment.CenterHorizontally){
-                   Row(
-                       modifier = Modifier
-                           .fillMaxWidth()
-                           .padding(16.dp),
-                       horizontalArrangement = Arrangement.spacedBy(10.dp),
-                       verticalAlignment = Alignment.CenterVertically
-                   ) {
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
 
-                       Text(
-                           text = "Popular",
-                           modifier = Modifier
-                               .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
-                               .padding(horizontal = 12.dp, vertical = 6.dp),
-                           color = Color.White,
-                           textAlign = TextAlign.Center,
-                           style = CustomTypography.titleMedium
-                       )
+                        Text(
+                            text = "Popular",
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            style = CustomTypography.titleMedium
+                        )
 
-                       Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.weight(1f))
 
-                       Text(
-                           text = "Recommended",
-                           modifier = Modifier
-                               .background(Color.White.copy(alpha = 0.5f), RoundedCornerShape(50))
-                               .padding(horizontal = 12.dp, vertical = 6.dp),
-                           color = Color.White,
-                           textAlign = TextAlign.Center,
-                           style = CustomTypography.titleMedium
+                        Text(
+                            text = "Recommended",
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.5f), RoundedCornerShape(50))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            style = CustomTypography.titleMedium
 
-                       )
-                   }
-                   Spacer(Modifier.weight(1f))
-                   Icon(painterResource(R.drawable.play), null , Modifier.size(64.dp), tint= Color.White)
-                   Spacer(Modifier.weight(1f))
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Icon(
+                        painterResource(R.drawable.play),
+                        null,
+                        Modifier.size(64.dp),
+                        tint = Color.White
+                    )
+                    Spacer(Modifier.weight(1f))
 
-                   Column (Modifier.fillMaxWidth().padding(24.dp)){  Text(
-                       text = "Distance city bundle.",
-                       style = CustomTypography.displayLarge
-                   )
+                    Column(Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)) {
+                        Text(
+                            text = "Distance city bundle.",
+                            style = CustomTypography.displayLarge
+                        )
 
-                       Text("'SLDFK KLW FLW KF KJWFN GEJKNKJNDV ENER VNEKJ VEIFJV IJEFNVKJ EVKJERKJV RKJGNERKJ RNERNEVJRENVJ ") }
-               }
+                        Text("'SLDFK KLW FLW KF KJWFN GEJKNKJNDV ENER VNEKJ VEIFJV IJEFNVKJ EVKJERKJV RKJGNERKJ RNERNEVJRENVJ ")
+                    }
+                }
 
             }
         }

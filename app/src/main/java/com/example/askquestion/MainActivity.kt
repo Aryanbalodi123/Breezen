@@ -116,9 +116,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ASKQUESTIONTheme {
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.statusBars)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.statusBars)
                 ) {
                     AppNavHost(onboardingPreferences)
                 }
@@ -128,7 +129,8 @@ class MainActivity : ComponentActivity() {
 }
 
 class OnboardingPreferences(context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE)
 
     fun isOnboardingCompleted(): Boolean {
         return prefs.getBoolean("onboarding_completed", false)
@@ -146,7 +148,14 @@ class AppNavigationState(
 ) {
     val showBottomBar: Boolean
         get() {
-            return currentRoute in listOf("home", "music", "breathe", "player", "meditate", "chatbot")
+            return currentRoute in listOf(
+                "home",
+                "music",
+                "breathe",
+                "player",
+                "meditate",
+                "chatbot"
+            )
         }
 
     val currentRouteName: String?
@@ -336,9 +345,11 @@ fun EnhancedBottomNavigation(
     val isChatScreen = navigation.isCurrentRoute("chatbot")
 
     var showChatMode by remember(isChatScreen) { mutableStateOf(isChatScreen) }
-    var rowWidth = if(isChatScreen) 1f else 0.8f
+    var rowWidth = if (isChatScreen) 1f else 0.8f
     Box(
-        modifier = Modifier.fillMaxWidth(0.8f).padding(bottom = 20.dp),
+        modifier = Modifier
+            .fillMaxWidth(0.8f)
+            .padding(bottom = 20.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
 
@@ -392,6 +403,7 @@ fun EnhancedBottomNavigation(
         }
     }
 }
+
 @Composable
 fun ChatInputBar(
     chatViewModel: ChatViewModel,
