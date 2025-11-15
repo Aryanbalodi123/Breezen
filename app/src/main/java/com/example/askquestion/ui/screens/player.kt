@@ -64,7 +64,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
@@ -72,11 +71,9 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavHostController
-import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
-import coil.request.SuccessResult
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -95,11 +92,14 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
+
+// Utility
 fun minSec(duration: Long): List<Long> {
     val minutes = duration / 1000 / 60
     val seconds = (duration / 1000) % 60
@@ -114,8 +114,9 @@ sealed class PlayerEvent {
     object ToggleRepeat : PlayerEvent()
 }
 
+
+
 @androidx.annotation.OptIn(UnstableApi::class)
-@OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
     navController: NavHostController,
@@ -126,186 +127,220 @@ fun PlayerScreen(
 
     val uiState by viewModel.playerUiState
     val currentSong = uiState.currentSong
+
     val hazeState = rememberHazeState()
 
-    var isImageAndPaletteLoaded by remember { mutableStateOf(false) }
+    // ───────────────────────────────────────────────────────────────
+    // NEW FLAGS
+    // ───────────────────────────────────────────────────────────────
+    var isPlayerReady by remember { mutableStateOf(false) }
+    var isImageLoaded by remember { mutableStateOf(false) }
     var currentTime by remember { mutableLongStateOf(0L) }
 
     val player = remember { ExoPlayer.Builder(context).build() }
 
     val dominantColor by animateColorAsState(
         targetValue = uiState.dominantColor,
-        animationSpec = tween(500),
-        label = "dominantColor"
+        animationSpec = tween(500)
     )
 
-    // --- Player Setup & Lifecycle ---
+    // ───────────────────────────────────────────────────────────────
+    // PLAYER SETUP ON NEW STREAM URL
+    // ───────────────────────────────────────────────────────────────
     LaunchedEffect(uiState.streamUrl) {
         if (uiState.streamUrl.isNotEmpty()) {
+            isPlayerReady = false
+            // isImageLoaded = false // 🔥 **BUG FIX**: DO NOT reset image flag here
+
+            Log.d("PlayerScreen", "⏯ Setting up player for ${uiState.streamUrl}")
+
             try {
-                player.setMediaItem(MediaItem.fromUri(uiState.streamUrl))
+                player.stop()
+                player.clearMediaItems()
+
+                val item = MediaItem.Builder()
+                    .setUri(uiState.streamUrl)
+                    .setMediaId(uiState.streamUrl)
+                    .build()
+
+                player.setMediaItem(item)
+
+                // 🔥 **FIX**: We no longer add the next media item here.
+                // We will let the ViewModel control this via the listener.
+
                 player.prepare()
                 player.playWhenReady = true
-            } catch (t: Throwable) {
-                Log.e("PlayerScreen", "prepare failed", t)
+            } catch (e: Exception) {
+                Log.e("PlayerScreen", "Player prepare failed", e)
             }
         }
     }
 
+    // ───────────────────────────────────────────────────────────────
+    // LIFECYCLE
+    // ───────────────────────────────────────────────────────────────
     DisposableEffect(lifecycleOwner, player) {
-        val observer = LifecycleEventObserver { _, event ->
+        val obs = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_START -> player.playWhenReady = true
                 Lifecycle.Event.ON_STOP -> player.playWhenReady = false
                 else -> Unit
             }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
+
+        lifecycleOwner.lifecycle.addObserver(obs)
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            try {
-                player.release()
-            } catch (t: Throwable) {
-                Log.e("PlayerScreen", "release failed", t)
-            }
+            lifecycleOwner.lifecycle.removeObserver(obs)
+            player.release()
         }
     }
 
-    // --- Player Listener & State Ticker ---
+    // ───────────────────────────────────────────────────────────────
+    // PLAYER LISTENER
+    // ───────────────────────────────────────────────────────────────
     LaunchedEffect(player) {
         val listener = object : Player.Listener {
-            override fun onIsPlayingChanged(isNowPlaying: Boolean) {
-                viewModel.isPlaying = isNowPlaying
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                viewModel.isPlaying = isPlaying
             }
 
             override fun onPlaybackStateChanged(state: Int) {
                 viewModel.setIsBuffering(state == Player.STATE_BUFFERING)
-                if (state == Player.STATE_READY && isImageAndPaletteLoaded) {
-                    viewModel.onPlayerReadyAndImageLoaded()
+
+                if (state == Player.STATE_READY) {
+                    Log.d("PlayerScreen", "✔ Player READY")
+                    isPlayerReady = true
+                }
+
+                // 🔥 **FIX**: When song ends, tell ViewModel to play next.
+                if (state == Player.STATE_ENDED) {
+                    Log.d("PlayerScreen", "Song ended, playing next")
+                    viewModel.playNextSong(context, forceManual = false)
                 }
             }
 
-            override fun onEvents(player: Player, events: Player.Events) {
-                if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED)) {
-                    if (player.playbackState == Player.STATE_ENDED) {
-                        viewModel.playNextSong(context)
-                    }
-                }
-            }
+            // 🔥 **FIX**: Removed onMediaItemTransition.
+            // This was causing the double loader.
         }
+
         player.addListener(listener)
 
+        // Ticker for progress
         try {
             while (isActive) {
                 try {
                     currentTime = player.currentPosition
-                } catch (t: Throwable) {
-                    break // Player released
-                }
-                delay(500L)
+                } catch (_: Exception) {}
+                delay(500)
             }
         } finally {
             player.removeListener(listener)
         }
     }
 
-    // --- Palette Extraction ---
+    // ───────────────────────────────────────────────────────────────
+    // IMAGE LOADING WITH TIMEOUT
+    // ───────────────────────────────────────────────────────────────
     LaunchedEffect(currentSong?.id) {
-        if (currentSong == null) return@LaunchedEffect
-        isImageAndPaletteLoaded = false
-        try {
+        val id = currentSong?.id ?: return@LaunchedEffect
+        isImageLoaded = false // <-- This is now the ONLY place this is set to false
+
+        val success = withTimeoutOrNull(2000) {
             val request = ImageRequest.Builder(context)
-                .data(IMAGE_BUCKET_URL + currentSong.id + ".webp")
-                .allowHardware(false)
+                .data(IMAGE_BUCKET_URL + id + ".webp")
                 .build()
-            val result = (context.imageLoader.execute(request) as? SuccessResult)?.drawable
-            val color = result?.let { drawable ->
-                Palette.from(drawable.toBitmap()).generate()
-                    ?.getDominantColor(0xFF444444.toInt())
-                    ?.let { Color(it) }
-            } ?: Color(0xFF6366F1) // Fallback
-            viewModel.setDominantColor(color)
-        } catch (t: Throwable) {
-            Log.e("PlayerScreen", "palette failed", t)
-            viewModel.setDominantColor(Color(0xFF6366F1)) // Fallback
-        } finally {
-            isImageAndPaletteLoaded = true
-            if (player.playbackState == Player.STATE_READY) {
-                viewModel.onPlayerReadyAndImageLoaded()
-            }
+
+            context.imageLoader.execute(request)
+            true
+        }
+
+        isImageLoaded = true // <-- Image is now loaded (or timed out)
+
+        Log.d(
+            "PlayerScreen",
+            if (success == true) "✔ Image Loaded" else "⚠ Timeout Image"
+        )
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // HIDE *INITIAL* LOADER WHEN BOTH READY
+    // ───────────────────────────────────────────────────────────────
+    LaunchedEffect(isPlayerReady, isImageLoaded) {
+        if (isPlayerReady && isImageLoaded) {
+            viewModel.onPlayerReadyAndImageLoaded()
         }
     }
 
-    // --- UI Layering ---
+    // ───────────────────────────────────────────────────────────────
+    // UI LAYERS
+    // ───────────────────────────────────────────────────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // Layer 1: The Player Content (always present, provides blur source)
+
+        // ───── UI CONTENT (blur source)
         PlayerContent(
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(hazeState), // This content will be blurred by Haze
-            hazeState = hazeState, // Pass HazeState to the new "Next Up" bar
+                .hazeSource(hazeState),
+            hazeState = hazeState,
             uiState = uiState,
+            isImageLoaded = isImageLoaded,
             dominantColor = dominantColor,
-            currentTime = currentTime,
+            currentTime = currentTime, // <-- Pass the real current time
             isPlaying = viewModel.isPlaying,
             isShuffleEnabled = viewModel.isShuffleEnabled,
             repeatMode = viewModel.repeatMode,
-            onSeek = { seekTime ->
+            onSeek = { t ->
                 try {
-                    player.seekTo(seekTime)
-                    currentTime = seekTime
-                } catch (t: Throwable) {
-                    Log.e("PlayerScreen", "seek failed", t)
-                }
+                    player.seekTo(t)
+                } catch (_: Exception) {}
             },
             onEvent = { event ->
                 when (event) {
-                    PlayerEvent.PlayPause -> {
+                    PlayerEvent.PlayPause ->
                         if (player.isPlaying) player.pause() else player.play()
+
+                    // 🔥 **FIX**: Stop player *before* requesting next song
+                    PlayerEvent.Next -> {
+                        player.stop()
+                        viewModel.playNextSong(context, forceManual = true)
                     }
-                    PlayerEvent.Next -> viewModel.playNextSong(context)
-                    PlayerEvent.Previous -> viewModel.playPreviousSong(context)
-                    PlayerEvent.ToggleShuffle -> viewModel.toggleShuffle()
-                    PlayerEvent.ToggleRepeat -> viewModel.toggleRepeat()
+
+                    // 🔥 **FIX**: Stop player *before* requesting previous song
+                    PlayerEvent.Previous -> {
+                        player.stop()
+                        viewModel.playPreviousSong(context)
+                    }
+
+                    PlayerEvent.ToggleShuffle ->
+                        viewModel.toggleShuffle()
+
+                    PlayerEvent.ToggleRepeat ->
+                        viewModel.toggleRepeat()
                 }
             },
             onBack = { navController.popBackStack() }
         )
 
-        // Layer 2: Transition Loader (Pulse)
-        AnimatedVisibility(
-            visible = uiState.loadState == PlayerLoadState.TRANSITIONING,
-            enter = fadeIn(animationSpec = tween(150)),
-            exit = fadeOut(animationSpec = tween(300))
-        ) {
-            PlayerTransitionLoader(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeEffect(
-                        hazeState,
-                        style = HazeStyle(
-                            blurRadius = 30.dp,
-                            tint = HazeTint(Color.Black.copy(alpha = 0.5f))
-                        )
-                    )
-            )
-        }
-
-        // Layer 3: Initial Loader (Plant)
+        // ───── INITIAL LOADER
         AnimatedVisibility(
             visible = uiState.loadState == PlayerLoadState.INITIAL,
             enter = fadeIn(),
-            exit = fadeOut(animationSpec = tween(500))
+            exit = fadeOut(tween(500))
         ) {
             PlayerInitialLoadScreen()
         }
     }
 }
 
+
+/* ----------------------
+   PlayerInitialLoadScreen & Transition loader
+   ---------------------- */
 @Composable
 fun PlayerInitialLoadScreen() {
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.plant_loader))
@@ -316,7 +351,7 @@ fun PlayerInitialLoadScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF051f05)), // Very dark green
+            .background(Color(0xFF051f05)),
         contentAlignment = Alignment.Center
     ) {
         LottieAnimation(
@@ -334,31 +369,23 @@ fun PlayerTransitionLoader(modifier: Modifier = Modifier) {
         composition,
         iterations = LottieConstants.IterateForever
     )
-    Box(
-        modifier = modifier.fillMaxSize(), // Haze/blur is applied via modifier
-        contentAlignment = Alignment.Center
-    ) {
-        LottieAnimation(
-            composition = composition,
-            progress = { progress },
-            modifier = Modifier.size(250.dp)
-        )
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        LottieAnimation(composition = composition, progress = { progress }, modifier = Modifier.size(250.dp))
     }
 }
 
+/* ----------------------
+   PlayerContent + Controls + Helpers
+   ---------------------- */
 
-/**
- * 🔥 REDESIGN: This composable holds the actual player UI.
- * Layout is changed: Controls are now under the title.
- * "Next Up" bar is at the bottom.
- */
 @Composable
 fun PlayerContent(
     modifier: Modifier = Modifier,
     hazeState: HazeState,
     uiState: PlayerUiState,
+    isImageLoaded: Boolean,
     dominantColor: Color,
-    currentTime: Long,
+    currentTime: Long, // <-- This is the *real* time from the player
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: TabViewModel.RepeatMode,
@@ -369,9 +396,18 @@ fun PlayerContent(
     val currentSong = uiState.currentSong
     val beigeColor = Color(0xFFF5F5DC)
 
-    val songDurationMs = if (currentSong?.duration ?: 0 > 0) currentSong!!.duration * 1000L else 1000L
+    // 🔥 **FIX**: We show shimmer *only* if the image isn't loaded yet.
+    // The player's buffering state (during seek) is handled by the
+    // spinner on the play button, not by the whole UI.
+    val showShimmer = !isImageLoaded
+
+    // 🔥 **FIX**: Use 0L for progress and time text while shimmering
+    val effectiveCurrentTime = if (showShimmer) 0L else currentTime
+
+    val songDurationMs = if ((currentSong?.duration ?: 0) > 0) currentSong!!.duration * 1000L else 1000L
     val (minuteTotal, secondTotal) = minSec(songDurationMs)
-    val (minuteCurrent, secondCurrent) = minSec(currentTime)
+    // 🔥 **FIX**: Use effectiveCurrentTime
+    val (minuteCurrent, secondCurrent) = minSec(effectiveCurrentTime)
 
     Box(
         modifier = modifier
@@ -379,14 +415,14 @@ fun PlayerContent(
             .drawBehind { drawSunshineEffect(dominantColor, size) }
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 🔥 REDESIGN: Top bar is cleaner. "Now Playing" is removed.
+            // Top bar
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {
                 IconButton(
                     onClick = onBack,
@@ -404,18 +440,15 @@ fun PlayerContent(
                         modifier = Modifier.size(24.dp)
                     )
                 }
-                // "Now Playing" Text is removed for a minimal look
             }
 
             Spacer(modifier = Modifier.height(48.dp))
 
             // Progress + Image
-            Box(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.align(Alignment.CenterHorizontally), contentAlignment = Alignment.Center) {
                 MusicProgress(
-                    currentTime = currentTime,
+                    // 🔥 **FIX**: Use effectiveCurrentTime
+                    currentTime = effectiveCurrentTime,
                     duration = songDurationMs,
                     strokeColor = beigeColor,
                     onSeek = onSeek
@@ -424,6 +457,7 @@ fun PlayerContent(
                 Text(
                     text = buildAnnotatedString {
                         withStyle(SpanStyle(color = Color.White)) {
+                            // 🔥 **FIX**: Use values from effectiveCurrentTime
                             append(String.format("%02d", minuteCurrent))
                             append(":")
                             append(String.format("%02d", secondCurrent))
@@ -439,51 +473,72 @@ fun PlayerContent(
                     modifier = Modifier.offset(y = (-125).dp)
                 )
 
-                AsyncImage(
-                    model = IMAGE_BUCKET_URL + (currentSong?.id ?: "") + ".webp",
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                Box(
                     modifier = Modifier
                         .size(220.dp)
-                        .clip(RoundedCornerShape(110.dp))
+                        .clip(RoundedCornerShape(110.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isImageLoaded) {
+                        AsyncImage(
+                            model = IMAGE_BUCKET_URL + (currentSong?.id ?: "") + ".webp",
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Show shimmer while image is loading
+                        ShimmerBox(modifier = Modifier.fillMaxSize())
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Title with shimmer
+            // 🔥 **FIX**: Logic now only depends on `showShimmer`
+            if (showShimmer) {
+                ShimmerBox(
+                    modifier = Modifier
+                        .height(30.dp)
+                        .fillMaxWidth(0.7f)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            } else {
+                Text(
+                    text = currentSong?.title ?: "Loading...",
+                    color = AppColors.TextPrimary,
+                    style = CustomTypography.headlineLarge.copy(fontSize = 30.sp, fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Artist with shimmer
+            // 🔥 **FIX**: Logic now only depends on `showShimmer`
+            if (showShimmer) {
+                ShimmerBox(
+                    modifier = Modifier
+                        .height(20.dp)
+                        .fillMaxWidth(0.5f)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            } else {
+                Text(
+                    text = currentSong?.artist ?: "Unknown",
+                    color = AppColors.TextSecondary,
+                    style = CustomTypography.bodyLarge.copy(fontSize = 18.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Title
-            Text(
-                text = currentSong?.title ?: "Loading...",
-                color = AppColors.TextPrimary,
-                style = CustomTypography.headlineLarge.copy(
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(horizontal = 24.dp),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Artist
-            Text(
-                text = currentSong?.artist ?: "Unknown",
-                color = AppColors.TextSecondary,
-                style = CustomTypography.bodyLarge.copy(
-                    fontSize = 18.sp
-                ),
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(32.dp)) // "Expensive" spacing
-
-            // 🔥 REDESIGN: Controls are moved UP
             MusicPlayerControls(
                 isPlaying = isPlaying,
                 isBuffering = uiState.isBuffering,
@@ -492,113 +547,17 @@ fun PlayerContent(
                 onEvent = onEvent
             )
 
-            // This spacer pushes the new "Next Up" bar to the bottom
+            // 🔥 **UI CHANGE**: Moved NextUpCard here
+            Spacer(modifier = Modifier.height(32.dp))
+            NextUpCard(hazeState = hazeState, nextUpSong = uiState.nextUpSong)
+
+            // 🔥 **UI CHANGE**: This spacer now pushes everything up
             Spacer(modifier = Modifier.weight(1f))
 
-            // 🔥 REDESIGN: New "Next Up" bar at the bottom
-            NextUpCard(
-                hazeState = hazeState,
-                nextUpSong = uiState.nextUpSong
-            )
-
-            Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
+            // (Removed the Spacer(16.dp) from here)
         }
     }
 }
-
-/**
- * 🔥 REDESIGN: New "Next Up" bar with iOS-style glassmorphism.
- */
-@Composable
-fun NextUpCard(
-    hazeState: HazeState,
-    nextUpSong: Song?
-) {
-    AnimatedVisibility(
-        visible = nextUpSong != null,
-        enter = fadeIn(animationSpec = tween(600)),
-        exit = fadeOut(animationSpec = tween(300)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp) // Main padding for the bar
-    ) {
-        if (nextUpSong == null) return@AnimatedVisibility
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp)) // Smooth rounded corners
-                // The Haze effect for frosted glass
-                .hazeEffect(
-                    hazeState,
-                    style = HazeStyle(
-                        blurRadius = 25.dp,
-                        tint = HazeTint(Color.White.copy(alpha = 0.15f))
-                    )
-                )
-                .border(
-                    1.dp,
-                    Color.White.copy(alpha = 0.2f),
-                    RoundedCornerShape(20.dp)
-                )
-                .padding(12.dp) // Inner padding
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Next song's image
-                AsyncImage(
-                    model = IMAGE_BUCKET_URL + nextUpSong.id + ".webp",
-                    contentDescription = "Next track cover",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Text column
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // "Next Up" label with neon-green accent
-                    Text(
-                        text = "NEXT UP",
-                        style = CustomTypography.bodySmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = AppColors.PrimaryGreen,
-                        fontSize = 11.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = nextUpSong.title,
-                        style = CustomTypography.bodyMedium,
-                        color = AppColors.TextPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Text(
-                        text = nextUpSong.artist ?: "Unknown",
-                        style = CustomTypography.bodySmall,
-                        color = AppColors.TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-// --- Utility and Control Composables ---
 
 private fun DrawScope.drawSunshineEffect(dominantColor: Color, canvasSize: Size) {
     val lightSource = Offset(-canvasSize.width * 0.3f, -canvasSize.height * 0.2f)
@@ -630,12 +589,7 @@ private fun DrawScope.drawSunshineEffect(dominantColor: Color, canvasSize: Size)
 }
 
 @Composable
-fun MusicProgress(
-    currentTime: Long,
-    duration: Long,
-    strokeColor: Color,
-    onSeek: (Long) -> Unit
-) {
+fun MusicProgress(currentTime: Long, duration: Long, strokeColor: Color, onSeek: (Long) -> Unit) {
     val progress = if (duration > 0) (currentTime.toFloat() / duration).coerceIn(0f, 1f) else 0f
 
     Canvas(
@@ -644,7 +598,6 @@ fun MusicProgress(
             .padding(15.dp)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
-                    // 🔥 FIX: Pass the tap offset directly to the seek logic
                     val newProgress = calculateProgressFromOffset(offset, size)
                     onSeek((newProgress * duration).toLong())
                 }
@@ -656,10 +609,7 @@ fun MusicProgress(
         val start = 270f + (cutAngle / 2f)
         val diameter = min(size.width, size.height)
         val arcSize = Size(diameter, diameter)
-        val topLeft = Offset(
-            (size.width - diameter) / 2f,
-            (size.height - diameter) / 2f
-        )
+        val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
 
         drawArc(
             color = strokeColor.copy(alpha = 0.3f),
@@ -697,26 +647,12 @@ fun MusicProgress(
             val arcRadius = diameter / 2f
             val tipX = centerX + (arcRadius * cos(angleInRadian)).toFloat()
             val tipY = centerY + (arcRadius * sin(angleInRadian)).toFloat()
-            drawCircle(
-                color = strokeColor.copy(alpha = 0.12f),
-                radius = (strokeWidth / 2f + 2.dp.toPx()) * 1.4f,
-                center = Offset(tipX, tipY)
-            )
-            drawCircle(
-                color = strokeColor,
-                radius = strokeWidth / 2f + 2.dp.toPx(),
-                center = Offset(tipX, tipY)
-            )
+            drawCircle(color = strokeColor.copy(alpha = 0.12f), radius = (strokeWidth / 2f + 2.dp.toPx()) * 1.4f, center = Offset(tipX, tipY))
+            drawCircle(color = strokeColor, radius = strokeWidth / 2f + 2.dp.toPx(), center = Offset(tipX, tipY))
         }
     }
 }
 
-/**
- * 🔥 FIX: Seek logic is simplified.
- * Removed the 'if (distance in innerRadius..radius)' check.
- * Now, tapping anywhere in the circle seeks based on the angle,
- * which is far more intuitive and fixes the "glitchy" feel.
- */
 private fun calculateProgressFromOffset(offset: Offset, size: IntSize): Float {
     val cutAngle = 60f
     val sweep = 360f - cutAngle
@@ -725,21 +661,49 @@ private fun calculateProgressFromOffset(offset: Offset, size: IntSize): Float {
     val center = Offset(size.width / 2f, size.height / 2f)
     val touchVector = offset - center
 
-    // Calculate the angle of the tap relative to the center
-    val angle = (Math.toDegrees(
-        atan2(touchVector.y.toDouble(), touchVector.x.toDouble())
-    ).toFloat() + 360f) % 360f
-
-    // Convert the angle to a progress value (0f to 1f)
+    val angle = (Math.toDegrees(atan2(touchVector.y.toDouble(), touchVector.x.toDouble())).toFloat() + 360f) % 360f
     val relative = (angle - startAngle + 360f) % 360f
     return if (relative <= sweep) {
         (relative / sweep).coerceIn(0f, 1f)
     } else {
-        // Handle taps in the "cut" section
         if (angle > startAngle + sweep || angle < startAngle) {
             if (relative > (360f - cutAngle / 2f)) 0f else 1f
         } else {
             0f
+        }
+    }
+}
+
+@Composable
+fun NextUpCard(hazeState: HazeState, nextUpSong: Song?) {
+    AnimatedVisibility(visible = nextUpSong != null, enter = fadeIn(animationSpec = tween(600)), exit = fadeOut(animationSpec = tween(300))) {
+        if (nextUpSong == null) return@AnimatedVisibility
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .hazeEffect(hazeState, style = HazeStyle(blurRadius = 25.dp, tint = HazeTint(Color.White.copy(alpha = 0.15f))))
+                .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+                .padding(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = IMAGE_BUCKET_URL + nextUpSong.id + ".webp",
+                    contentDescription = "Next track cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(10.dp))
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "NEXT UP", style = CustomTypography.bodySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), color = AppColors.PrimaryGreen, fontSize = 11.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = nextUpSong.title, style = CustomTypography.bodyMedium, color = AppColors.TextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = nextUpSong.artist ?: "Unknown", style = CustomTypography.bodySmall, color = AppColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }
@@ -753,72 +717,28 @@ fun MusicPlayerControls(
     onEvent: (PlayerEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.fillMaxWidth()
-    ) {
+    Row(horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth()) {
         IconButton(onClick = { onEvent(PlayerEvent.ToggleShuffle) }) {
-            Icon(
-                painter = painterResource(R.drawable.shuffle),
-                contentDescription = "Toggle shuffle",
-                modifier = Modifier.size(24.dp),
-                tint = if (isShuffleEnabled) AppColors.PrimaryGreen else Color.White.copy(alpha = 0.7f)
-            )
+            Icon(painter = painterResource(R.drawable.shuffle), contentDescription = "Toggle shuffle", modifier = Modifier.size(24.dp), tint = if (isShuffleEnabled) AppColors.PrimaryGreen else Color.White.copy(alpha = 0.7f))
         }
         IconButton(onClick = { onEvent(PlayerEvent.Previous) }) {
-            Icon(
-                painter = painterResource(R.drawable.set_backward),
-                contentDescription = "Previous track",
-                modifier = Modifier.size(28.dp),
-                tint = Color.White
-            )
+            Icon(painter = painterResource(R.drawable.set_backward), contentDescription = "Previous track", modifier = Modifier.size(28.dp), tint = Color.White)
         }
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(Color.White)
-                .clickable { onEvent(PlayerEvent.PlayPause) },
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.White).clickable { onEvent(PlayerEvent.PlayPause) }, contentAlignment = Alignment.Center) {
             if (isBuffering) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
-                    color = Color.Black,
-                    strokeWidth = 3.dp
-                )
+                CircularProgressIndicator(modifier = Modifier.size(32.dp), color = Color.Black, strokeWidth = 3.dp)
             } else {
-                Icon(
-                    painter = painterResource(
-                        if (isPlaying) R.drawable.pause else R.drawable.play
-                    ),
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = Color.Black,
-                    modifier = Modifier.size(32.dp)
-                )
+                Icon(painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play), contentDescription = if (isPlaying) "Pause" else "Play", tint = Color.Black, modifier = Modifier.size(32.dp))
             }
         }
         IconButton(onClick = { onEvent(PlayerEvent.Next) }) {
-            Icon(
-                painter = painterResource(R.drawable.set_forward),
-                contentDescription = "Next track",
-                modifier = Modifier.size(28.dp),
-                tint = Color.White
-            )
+            Icon(painter = painterResource(R.drawable.set_forward), contentDescription = "Next track", modifier = Modifier.size(28.dp), tint = Color.White)
         }
         IconButton(onClick = { onEvent(PlayerEvent.ToggleRepeat) }) {
-            Icon(
-                painter = painterResource(
-                    if (repeatMode == TabViewModel.RepeatMode.ONE) R.drawable.repeat_one else R.drawable.repeat
-                ),
-                contentDescription = "Toggle repeat mode",
-                modifier = Modifier.size(24.dp),
-                tint = when (repeatMode) {
-                    TabViewModel.RepeatMode.OFF -> Color.White.copy(alpha = 0.7f)
-                    TabViewModel.RepeatMode.ALL, TabViewModel.RepeatMode.ONE -> AppColors.PrimaryGreen
-                }
-            )
+            Icon(painter = painterResource(if (repeatMode == TabViewModel.RepeatMode.ONE) R.drawable.repeat_one else R.drawable.repeat), contentDescription = "Toggle repeat mode", modifier = Modifier.size(24.dp), tint = when (repeatMode) {
+                TabViewModel.RepeatMode.OFF -> Color.White.copy(alpha = 0.7f)
+                TabViewModel.RepeatMode.ALL, TabViewModel.RepeatMode.ONE -> AppColors.PrimaryGreen
+            })
         }
     }
 }

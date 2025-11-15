@@ -115,7 +115,7 @@ fun AppBackground(): Brush {
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun HomeContent(navController: NavController, viewModel: TabViewModel = viewModel(), homeViewModel: HomeViewModel = viewModel()) {
+fun HomeContent(navController: NavController, viewModel: TabViewModel , homeViewModel: HomeViewModel = viewModel()) {
 
     LaunchedEffect(Unit) {
         if (viewModel.tabs.value.isEmpty()) {
@@ -294,7 +294,7 @@ fun HeaderSection(
     username: String
 ) {
     val context = LocalContext.current
-    val allSongs by viewModel.allSongs
+    val allSongs by viewModel.allSongs // Get the full list for the playlist
 
     Box(
         modifier = Modifier
@@ -364,7 +364,7 @@ fun HeaderSection(
             Spacer(Modifier.height(24.dp))
             IconButton(
                 onClick = {
-                    // **FIXED**: Use new helper
+                    // 🔥 FIX: Use the new helper for instant navigation
                     if (!isLoading && song != null && allSongs.isNotEmpty()) {
                         playSongFromPlaylist(context, viewModel, song, allSongs, navController)
                     }
@@ -904,7 +904,7 @@ fun FeatureSectionCard1(
 
                 IconButton(
                     onClick = {
-                        // **FIXED**: Use new helper
+                        // 🔥 FIX: Use the new helper for instant navigation
                         if (!isLoading && song != null && allSongs.isNotEmpty()) {
                             playSongFromPlaylist(context, viewModel, song, allSongs, navController)
                         }
@@ -1053,7 +1053,7 @@ fun FeatureSectionCard2(
 
                 IconButton(
                     onClick = {
-                        // **FIXED**: Use new helper
+                        // 🔥 FIX: Use the new helper for instant navigation
                         if (!isLoading && song != null && allSongs.isNotEmpty()) {
                             playSongFromPlaylist(
                                 context,

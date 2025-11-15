@@ -9,25 +9,21 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Header
-import java.io.File
-import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-
+// ------------------ CONFIG ------------------
 const val SUPABASE_API_KEY_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmdWppc3ZlcnptamRiYnVwZGttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3MTY2MzQsImV4cCI6MjA2NDI5MjYzNH0.ShF7oxMFhS5CnhhGUPikgp8XhKJaGosZj-kCtGyEj3E"
 const val SUPABASE_URL = "https://cfujisverzmjdbbupdkm.supabase.co/rest/v1/"
 const val SUPABASE_URL_AUTH = "https://cfujisverzmjdbbupdkm.supabase.co"
 const val SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmdWppc3ZlcnptamRiYnVwZGttIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODcxNjYzNCwiZXhwIjoyMDY0MjkyNjM0fQ.bFl0jGFlw6O4dyQg8FirUOxXGuCxHXSU02NfOhDIKEo"
 
-
 const val TELEGRAM_BOT_TOKEN = "7717323235:AAFlc9TTF9137Zq1X43KraruBQ2ZJhCNGr0"
 const val TELEGRAM_CHANNEL_ID = -1002482311457
-const val TELEGRAM_URL ="https://api.telegram.org/file/bot$TELEGRAM_BOT_TOKEN/"
+const val TELEGRAM_URL = "https://api.telegram.org/file/bot$TELEGRAM_BOT_TOKEN/"
 const val IMAGE_BUCKET_URL = "https://cfujisverzmjdbbupdkm.supabase.co/storage/v1/object/public/breezen/songs_image/"
 
-
-
+// ------------------ DATA ------------------
 data class Tab(
     val id : String,
     val name: String
@@ -49,7 +45,7 @@ data class Song(
     val stream_id:String
 )
 
-
+// ------------------ RETROFIT API ------------------
 interface SupabaseAPI {
     @GET("tabs")
     suspend fun getTabs(
@@ -77,35 +73,40 @@ object RetroFitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(SupabaseAPI::class.java)
-
     }
 }
 
+// ------------------ TELEGRAM HELPERS ------------------
+
 /**
- * 🔥 FIX: New function to get the streamable URL.
- * This function is much faster as it doesn't download the file.
+ * 🔥 PERFORMANCE FIX: Gets the streamable URL from Telegram with an in-memory LRU cache.
+ * This avoids asking /getFile repeatedly for the same file_id.
  */
 suspend fun getMusicStreamUrl(botToken: String, fileID: String): String? {
+    // Fast path: return cached URL if present
+    MusicCacheManager.getCachedStreamUrl(fileID)?.let { return it }
+
     return withContext(Dispatchers.IO) {
         try {
-            // Step 1: Ask Telegram for the file path
             val getFileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=$fileID"
             val connection = URL(getFileUrl).openConnection() as HttpURLConnection
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 15_000
             val jsonData = connection.inputStream.bufferedReader().readText()
-            Log.d("ApiHelper", "GetFile JSON: $jsonData")
             connection.disconnect()
+
+            Log.d("SupabaseStorage", "getFile response: $jsonData")
 
             val filePath = JSONObject(jsonData)
                 .getJSONObject("result")
                 .getString("file_path")
 
-            // Step 2: Build and return the direct download URL for streaming
             val downloadUrl = "https://api.telegram.org/file/bot$botToken/$filePath"
-            Log.d("ApiHelper", "Got stream URL: $downloadUrl")
+            // cache it
+            MusicCacheManager.putStreamUrl(fileID, downloadUrl)
             downloadUrl
-
         } catch (e: Exception) {
-            Log.e("ApiHelper", "Failed to get music stream URL", e)
+            Log.e("SupabaseStorage", "Failed to get music stream URL", e)
             e.printStackTrace()
             null
         }
@@ -113,8 +114,8 @@ suspend fun getMusicStreamUrl(botToken: String, fileID: String): String? {
 }
 
 /**
- * DEPRECATED: This function downloads the *entire* file, causing slow loads.
- * Replaced by getMusicStreamUrl.
+ * Downloads the full file (DEPRECATED for immediate streaming), but now backed by MusicCacheManager.
+ * Returns local file absolute path when the file is present or successfully downloaded, else null.
  */
 suspend fun retrieveMusicFile(
     context: Context,
@@ -123,45 +124,15 @@ suspend fun retrieveMusicFile(
 ): String? {
     return withContext(Dispatchers.IO) {
         try {
-            // Step 1: Ask Telegram for the file path
-            val getFileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=$fileID"
-            val connection = URL(getFileUrl).openConnection() as HttpURLConnection
-            val jsonData = connection.inputStream.bufferedReader().readText()
-            Log.d("file path ask" , jsonData)
+            // Get stream URL (possibly cached)
+            val streamUrl = getMusicStreamUrl(botToken, fileID) ?: return@withContext null
 
-            connection.disconnect()
+            // Deterministic cache filename
+            val fileName = "tg_${fileID}.opus"
 
-            val filePath = JSONObject(jsonData)
-                .getJSONObject("result")
-                .getString("file_path")
-
-            // Step 2: Get file name from filePath (last part after '/')
-            val fileName = filePath.substringAfterLast("/")
-            Log.d("file name" , fileName)
-
-            // Step 3: Prepare local file location
-            val localFile = File(context.filesDir, fileName)
-            if (localFile.exists()) {
-                Log.d("ApiHelper", "File already cached, playing from disk.")
-                return@withContext localFile.absolutePath
-            }
-            // Step 4: Build direct download URL
-            val downloadUrl = "https://api.telegram.org/file/bot$botToken/$filePath"
-
-            // Step 5: Download and save locally
-            Log.d("ApiHelper", "Downloading file, this will be slow...")
-            val fileConnection = URL(downloadUrl).openConnection() as HttpURLConnection
-            val inputStream = fileConnection.inputStream
-            val outputStream = FileOutputStream(localFile)
-            inputStream.copyTo(outputStream)
-            outputStream.close()
-            inputStream.close()
-            fileConnection.disconnect()
-            Log.d("file path" , localFile.absolutePath)
-            // Step 6: Return saved file path
-
-            localFile.absolutePath
-
+            // Use MusicCacheManager to download if missing
+            val localPath = MusicCacheManager.downloadIfMissing(context, streamUrl, fileName)
+            localPath
         } catch (e: Exception) {
             e.printStackTrace()
             null
