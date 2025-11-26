@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+
+# Keep the JNI wrapper
+-keep class com.example.breezen.core.network.Keys { *; }
+-dontwarn com.example.breezen.core.network.Keys
+
+# Keep things needed for reflection if any
+-keepclassmembers class * {
+    native <methods>;
+}

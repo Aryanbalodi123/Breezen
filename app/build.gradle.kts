@@ -12,7 +12,18 @@ plugins {
 }
 
 android {
-    namespace = "com.example.askquestion"
+
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+
+        }
+    }
+
+
+
+    namespace = "com.example.breezen"
     compileSdk = 36
 
     val localProperties = Properties()
@@ -22,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.askquestion"
+        applicationId = "com.example.breezen"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -31,18 +42,40 @@ android {
         testInstrumentationRunner= "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField("String", "SUPABASE_URL_AUTH", "\"${localProperties.getProperty("SUPABASE_URL_AUTH")}\"")
-        buildConfigField("String", "SUPABASE_API_KEY_ANON", "\"${localProperties.getProperty("SUPABASE_API_KEY_ANON")}\"")
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
+
+
+
     }
 
     buildTypes {
+
+        debug {
+            isDebuggable = true
+            externalNativeBuild {
+                cmake {
+                    // Tell C++ this is DEBUG mode
+                    cppFlags("-DDEBUG=1")
+                }
+            }
+        }
+
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
 
+            externalNativeBuild {
+                cmake {
+                    // Tell C++ this is RELEASE mode
+                    cppFlags("-DDEBUG=0")
+                }
+            }
         }
     }
 
@@ -128,6 +161,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.foundation)
 
     // Testing
     testImplementation("junit:junit:4.13.2")

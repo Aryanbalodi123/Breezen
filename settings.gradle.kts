@@ -21,5 +21,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ASK QUESTION"
+rootProject.name = "Breezen"
 include(":app")
