@@ -9,6 +9,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.POST
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -56,6 +57,13 @@ interface SupabaseAPI {
         @Header("apiKey") apiKey :String,
         @Header("Authorization") authorization :String
     ): List<Song>
+
+
+    @POST("mood_logs")
+    suspend fun setMoodValue(
+        @Header("apiKey") apiKey : String,
+        @Header("Authorization") authorization : String,
+    )
 
 //    @PATCH("items")
 //    suspend fun updateSongColor(

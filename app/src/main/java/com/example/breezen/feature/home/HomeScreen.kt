@@ -1,7 +1,5 @@
 package com.example.breezen.feature.home
 
-// --- THIS IS THE FIX ---
-// --- END FIX ---
 import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.background
@@ -15,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.breezen.core.data.MoodPreference
 import com.example.breezen.core.network.Song
 import com.example.breezen.feature.home.components.AffirmationSection
 import com.example.breezen.feature.home.components.AppHeader
@@ -39,10 +39,10 @@ fun HomeContent(
     homeViewModel: HomeViewModel = viewModel()
 ) {
 
-    val context = LocalContext.current // 1. Get the context
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
         if (viewModel.tabs.value.isEmpty()) {
-            viewModel.fetchSongData(context) // 2. Pass the context here
+            viewModel.fetchSongData(context)
         }
     }
     val tabs by viewModel.tabs
@@ -57,6 +57,8 @@ fun HomeContent(
             viewModel.featuredSongs = allSongs.shuffled().take(2)
         }
     }
+    val isMoodDoneToday by MoodPreference.getMoodBoolean(context)
+        .collectAsState(initial = false)
 
     val headerSong: Song? = viewModel.headerSong
     val featuredSongs: List<Song> = viewModel.featuredSongs
@@ -72,7 +74,7 @@ fun HomeContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding( vertical = 8.dp)
+                .padding(vertical = 8.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             AppHeader(user?.username ?: "")
@@ -82,13 +84,13 @@ fun HomeContent(
             HeaderSection(headerSong, viewModel, navController, isLoading, user?.username ?: "")
 
             Spacer(modifier = Modifier.height(28.dp))
-            MoodSelector()
 
+            // This now handles its own state (UI vs Lottie)
+            if(!isMoodDoneToday){MoodSelector()}
 
             Spacer(modifier = Modifier.height(28.dp))
 
             AffirmationSection()
-
 
             Spacer(modifier = Modifier.height(28.dp))
 

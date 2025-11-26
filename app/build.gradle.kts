@@ -113,6 +113,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("com.airbnb.android:lottie-compose:6.4.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Compose UI (from BOM)
     implementation("androidx.compose.ui:ui")
@@ -162,6 +163,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.animation.core)
 
     // Testing
     testImplementation("junit:junit:4.13.2")
