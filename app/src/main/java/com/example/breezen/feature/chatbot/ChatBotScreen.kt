@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -24,8 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +41,10 @@ import com.example.breezen.feature.chatbot.components.EmptyStateLarge
 import com.example.breezen.feature.chatbot.components.LoadingBubble
 import com.example.breezen.feature.chatbot.components.MessageBubble
 import com.example.breezen.feature.chatbot.components.TopHeader
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 
 
 @Composable
@@ -48,6 +55,14 @@ fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
+    // Create HazeState for the background blur effect
+    val hazeState = remember { HazeState() }
+    val glassHazeStyle = HazeStyle(
+        blurRadius = 30.dp,
+        tint = HazeTint(MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)),
+        noiseFactor = 0f
+    )
+
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
@@ -56,15 +71,19 @@ fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background // Use theme background
+        color = Color.Transparent // Make surface transparent to show background
     ) {
-        // Background vector drawable
-        Image(
-            painter = painterResource(R.drawable.chatbot_main),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        // Background Image with Haze Effect
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(R.drawable.chatbot_bg), // Use the specified image
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeEffect(state = hazeState, style = glassHazeStyle), // Apply haze
+                contentScale = ContentScale.Crop
+            )
+        }
 
         Column(
             modifier = Modifier.fillMaxSize()
@@ -81,7 +100,14 @@ fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
                 contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
             ) {
                 if (messages.isEmpty() && !loading) {
-                    item { EmptyStateLarge() }
+                    item {
+                        EmptyStateLarge(
+                            onSendPrompt = { promptText ->
+                                viewModel.sendMessage(promptText)
+                            },
+                            hazeState = hazeState
+                        )
+                    }
                 }
 
                 itemsIndexed(messages) { _, (sender, message) ->

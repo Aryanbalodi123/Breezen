@@ -54,7 +54,7 @@ import kotlinx.coroutines.delay
 @Stable
 class AppNavigationState(
     val navController: NavHostController,
-    private val currentRoute: String?
+    val currentRoute: String?
 ) {
     val showBottomBar: Boolean
         get() {

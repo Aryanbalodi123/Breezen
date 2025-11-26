@@ -7,7 +7,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,6 +59,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.breezen.core.network.IMAGE_BUCKET_URL
 import com.example.breezen.core.network.Song
+import com.example.breezen.core.ui.components.BackButton
 import com.example.breezen.core.ui.components.ShimmerBox
 import com.example.breezen.feature.music.PlayerLoadState
 import com.example.breezen.feature.music.PlayerUiState
@@ -271,7 +266,7 @@ fun PlayerScreen(
                         viewModel.toggleRepeat()
                 }
             },
-            onBack = { navController.popBackStack() }
+            navController = navController
         )
 
         AnimatedVisibility(
@@ -297,7 +292,7 @@ internal fun PlayerContent(
     repeatMode: TabViewModel.RepeatMode,
     onSeek: (Long) -> Unit,
     onEvent: (PlayerEvent) -> Unit,
-    onBack: () -> Unit
+    navController: NavHostController
 ) {
     val currentSong = uiState.currentSong
     // This is an artistic choice, not a theme color. It stays.
@@ -322,38 +317,9 @@ internal fun PlayerContent(
                 .padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(16.dp)
-                        .size(48.dp)
-                        .background(
-                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
-                            CircleShape
-                        )
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                            CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
+           BackButton(navController)
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Progress + Image
             Box(

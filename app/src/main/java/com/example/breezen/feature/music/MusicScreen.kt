@@ -92,10 +92,7 @@ fun MusicScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                MusicScreenHeader(
-                    onBackClick = {
-                        navController.popBackStack()
-                    })
+                MusicScreenHeader(navController)
 
                 Spacer(modifier = Modifier.height(24.dp))
 

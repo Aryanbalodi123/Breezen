@@ -1,6 +1,5 @@
 package com.example.breezen.feature.chatbot.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,27 +25,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.SelfImprovement
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -58,7 +49,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -66,15 +57,20 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.breezen.R
+import com.example.breezen.core.ui.components.BackButton
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import com.example.breezen.core.ui.theme.Prata
-import com.example.breezen.core.ui.theme.SystemStop
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 
-
+// ... TopHeader remains unchanged ...
 @Composable
 internal fun TopHeader(onNewChatClicked: () -> Unit, navController: NavController) {
     Row(
@@ -84,13 +80,7 @@ internal fun TopHeader(onNewChatClicked: () -> Unit, navController: NavControlle
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Left button
-        ActionButton(
-            icon = Icons.Default.ArrowBack, contentDescription = "Back",
-            onClick = {
-
-                navController.popBackStack()
-            },
-        )
+        BackButton(navController)
 
         // Center content
         Row(
@@ -104,7 +94,6 @@ internal fun TopHeader(onNewChatClicked: () -> Unit, navController: NavControlle
                     .clip(RoundedCornerShape(50))
                     .background(
                         Brush.linearGradient(
-                            // Use theme colors for the gradient
                             colors = listOf(
                                 MaterialTheme.colorScheme.secondary,
                                 MaterialTheme.colorScheme.primary
@@ -116,16 +105,17 @@ internal fun TopHeader(onNewChatClicked: () -> Unit, navController: NavControlle
                     .padding(horizontal = 20.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "ZenAI",
-                    color = MaterialTheme.colorScheme.onSecondary, // Use theme
-                    style = MaterialTheme.typography.titleMedium // Use theme
+                    "Zeni",
+                    color = MaterialTheme.colorScheme.onSecondary,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontFamily = FunnelDisplayFamily
                 )
                 Spacer(Modifier.width(6.dp))
                 Icon(
                     painterResource(R.drawable.sparkles),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSecondary // Use theme
+                    tint = MaterialTheme.colorScheme.onSecondary
                 )
             }
         }
@@ -140,33 +130,120 @@ internal fun TopHeader(onNewChatClicked: () -> Unit, navController: NavControlle
 }
 
 @Composable
-internal fun EmptyStateLarge() {
-    Box {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+internal fun EmptyStateLarge(
+    onSendPrompt: (String) -> Unit, // Callback to send text immediately
+    hazeState: HazeState
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(40.dp))
+        Text(
+            "Hey Emma,",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            fontFamily = Prata
+        )
 
-            Spacer(Modifier.height(24.dp))
-            Text(
-                "Hi there!",
-                style = MaterialTheme.typography.displayLarge, // Use theme
-                color = MaterialTheme.colorScheme.onBackground, // Use theme
-                fontFamily = FunnelDisplayFamily // Apply creative font
+        Spacer(Modifier.height(180.dp))
+        Text(
+            "How are you feeling\nthis morning?",
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+            fontFamily = FunnelDisplayFamily
+        )
+        Spacer(Modifier.height(40.dp))
+
+        Spacer(Modifier.weight(1f))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 100.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            SuggestionButton(
+                title = "Morning Calm",
+                subtitle = "5-min breathing",
+                icon = Icons.Outlined.SelfImprovement,
+                modifier = Modifier.weight(1f),
+                onClick = { onSendPrompt("Guide me through a short 5-minute morning breathing exercise.") },
+                hazeState = hazeState
             )
-            Text(
-                "How can I help you?",
-                style = MaterialTheme.typography.titleMedium, // Use theme
-                color = MaterialTheme.colorScheme.onBackground, // Use theme
-                fontFamily = Prata // Apply creative font
+            SuggestionButton(
+                title = "Sleep Well",
+                subtitle = "Relaxation story",
+                icon = Icons.Outlined.Bedtime,
+                modifier = Modifier.weight(1f),
+                onClick = { onSendPrompt("Tell me a calming sleep story to help me relax.") },
+                hazeState = hazeState
             )
         }
     }
 }
 
+@Composable
+fun SuggestionButton(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    hazeState: HazeState
+) {
+    // Glass style - Darker tint as requested
+    val glassHazeStyle = HazeStyle(
+        blurRadius = 24.dp,
+        tint = HazeTint(Color.Black.copy(alpha = 0.55f)), // Increased opacity for darker look
+        noiseFactor = 0f
+    )
+
+    Box(
+        modifier = modifier
+            .height(160.dp) // Adjusted height to look good with 2 lines of text
+            .clip(RoundedCornerShape(32.dp))
+            .hazeEffect(state = hazeState, style = glassHazeStyle)
+            .background(Color.Black.copy(alpha = 0.2f))
+            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp)) // Subtle border
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                icon,
+                null,
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color.White.copy(alpha = 0.95f),
+                textAlign = TextAlign.Center,
+                fontFamily = Prata
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                fontFamily = FunnelDisplayFamily
+            )
+        }
+    }
+}
+
+// ... Rest of the file (MessageBubble, etc.) remains unchanged ...
 @Composable
 internal fun MessageBubble(
     message: String,
@@ -192,9 +269,10 @@ internal fun MessageBubble(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Zeni AI",
+                    "Zeni",
                     color = MaterialTheme.colorScheme.primary, // Use theme
-                    style = MaterialTheme.typography.titleMedium // Use theme
+                    style = MaterialTheme.typography.titleMedium, // Use theme
+                    fontFamily = FunnelDisplayFamily
                 )
             }
             Box(
@@ -243,7 +321,8 @@ internal fun MessageBubble(
                     Text(
                         message,
                         color = MaterialTheme.colorScheme.onSecondary, // Use theme
-                        style = MaterialTheme.typography.bodyMedium // Use theme
+                        style = MaterialTheme.typography.bodyMedium, // Use theme
+                        fontFamily = Prata
                     )
                 }
             }
@@ -252,7 +331,6 @@ internal fun MessageBubble(
 }
 
 private fun formatRichText(text: String): AnnotatedString {
-    // A simple markdown parser for bold (**) and italics (*)
     return buildAnnotatedString {
         val pattern = Regex("(?<=\\s|^)(\\*\\*|\\*)([^*]+)(\\*\\*|\\*)(?=\\s|$)")
         var lastIndex = 0
@@ -352,92 +430,8 @@ internal fun LoadingBubble() {
         Text(
             "Thinking...",
             color = MaterialTheme.colorScheme.onSurface, // Use theme
-            style = MaterialTheme.typography.bodyMedium // Use theme
+            style = MaterialTheme.typography.bodyMedium, // Use theme
+            fontFamily = Prata
         )
-    }
-}
-
-@Composable
-internal fun BottomInputSection(
-    input: String,
-    onInputChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onStop: () -> Unit,
-    loading: Boolean
-) {
-    Surface(
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        color = MaterialTheme.colorScheme.background.copy(alpha = 0.9f), // Use theme
-        tonalElevation = 6.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AnimatedVisibility(
-                visible = loading
-            ) {
-                Button(
-                    onClick = onStop,
-                    colors = ButtonDefaults.buttonColors(containerColor = SystemStop) // Use specific system color
-                ) {
-                    Icon(
-                        Icons.Default.Stop,
-                        "Stop",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Stop generating", color = MaterialTheme.colorScheme.onPrimary)
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                BasicTextField(
-                    value = input,
-                    onValueChange = onInputChange,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.6f), // Use theme
-                            MaterialTheme.shapes.extraLarge
-                        )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    singleLine = true,
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onBackground),
-                    decorationBox = { innerTextField ->
-                        if (input.isEmpty()) {
-                            Text(
-                                "Ask me anything...",
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        innerTextField()
-                    })
-                val sendButtonEnabled = input.isNotBlank() && !loading
-                IconButton(
-                    onClick = onSend,
-                    enabled = sendButtonEnabled,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = if (sendButtonEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = 0.12f
-                        ),
-                        contentColor = if (sendButtonEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = 0.38f
-                        )
-                    )
-                ) {
-                    Icon(Icons.Default.Send, contentDescription = "Send")
-                }
-            }
-        }
     }
 }

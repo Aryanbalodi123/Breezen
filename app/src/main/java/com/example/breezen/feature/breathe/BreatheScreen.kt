@@ -7,7 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,10 +17,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +31,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.breezen.core.ui.components.BackButton
 import com.example.breezen.feature.breathe.components.BreathingAnimation
 import com.example.breezen.feature.breathe.components.DirectionInstruction
 import com.example.breezen.feature.breathe.components.EnhancedControlCard
@@ -125,29 +121,7 @@ fun BreatheScreen(navController: NavController) {
             }
         }
 
-        // Back button (Glassy style)
-        IconButton(
-            onClick = { navController.popBackStack() },
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-                .size(48.dp)
-                .background(
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), CircleShape
-                )
-                .border(
-                    1.dp,
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                    CircleShape
-                )
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+        BackButton(navController)
 
         // Main content
         Column(
