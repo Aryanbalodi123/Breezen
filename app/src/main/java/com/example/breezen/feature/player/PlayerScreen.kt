@@ -309,7 +309,22 @@ internal fun PlayerContent(
     Box(
         modifier = modifier
             .background(MaterialTheme.colorScheme.background)
-            .drawBehind { drawSunshineEffect(dominantColor, size) }
+            // --- UI FIX: Apply Dominant Color Gradient ---
+            .drawBehind {
+                // 1. Fill background with a dark wash of the dominant color
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            dominantColor.copy(alpha = 0.6f), // Top: stronger color
+                            dominantColor.copy(alpha = 0.3f),
+                            Color.Black // Bottom: fade to black
+                        )
+                    )
+                )
+                // 2. Keep your artistic sunshine effect on top
+                drawSunshineEffect(dominantColor, size)
+            }
+
     ) {
         Column(
             modifier = Modifier

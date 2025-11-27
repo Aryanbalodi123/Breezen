@@ -7,9 +7,12 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Query
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -32,11 +35,17 @@ data class Song(
     val artist :String,
     val is_favorite: Boolean,
     val stream_id:String,
-    // --- ADD THIS LINE ---
-    val dominant_color: String? // This is your new database column
+    val dominant_color: String?,
+    // --- NEW: Error Handling Fields ---
+    val got_error: Boolean = false,
+    val got_error_desc: String? = null
 )
 
-//data class DominantColorUpdate(val dominant_color: String)
+// DTO for reporting error
+data class ErrorReportBody(
+    val got_error: Boolean = true,
+    val got_error_desc: String
+)
 
 // ------------------ RETROFIT API ------------------
 interface SupabaseAPI {
@@ -52,12 +61,12 @@ interface SupabaseAPI {
         @Header("Authorization") authorization :String
     ): List<Category>
 
-    @GET("items")
+    // --- UPDATED: Filter out errors on fetch ---
+    @GET("items?got_error=is.false")
     suspend fun getSongs(
         @Header("apiKey") apiKey :String,
         @Header("Authorization") authorization :String
     ): List<Song>
-
 
     @POST("mood_logs")
     suspend fun setMoodValue(
@@ -65,18 +74,14 @@ interface SupabaseAPI {
         @Header("Authorization") authorization : String,
     )
 
-//    @PATCH("items")
-//    suspend fun updateSongColor(
-//        @Header("apiKey") apiKey : String,
-//        @Header("Authorization") authorization : String,
-//        @Header("Prefer") prefer : String = "return=minimal",
-//        @Header("Content-Type") contentType : String = "application/json",
-//        @Header("Accept") accept : String = "application/json",
-//        @Query("id") filter : String,
-//        @Body body : DominantColorUpdate
-//    ): Response<Unit>
-
-
+    // --- NEW: Report Error Endpoint ---
+    @PATCH("items")
+    suspend fun reportError(
+        @Header("apiKey") apiKey : String,
+        @Header("Authorization") authorization : String,
+        @Query("id") id: String = "eq.ID_HERE", // Retrofit format placeholder, handled in call
+        @Body body: ErrorReportBody
+    )
 }
 
 object RetroFitClient {
@@ -88,14 +93,10 @@ object RetroFitClient {
             .create(SupabaseAPI::class.java)
     }
 }
-// ------------------ TELEGRAM HELPERS ------------------
 
-/**
- * 🔥 PERFORMANCE FIX: Gets the streamable URL from Telegram with an in-memory LRU cache.
- * This avoids asking /getFile repeatedly for the same file_id.
- */
+// ------------------ TELEGRAM HELPERS ------------------
+// (Unchanged from your provided file)
 suspend fun getMusicStreamUrl(botToken: String, fileID: String): String? {
-    // Fast path: return cached URL if present
     MusicCacheManager.getCachedStreamUrl(fileID)?.let { return it }
 
     return withContext(Dispatchers.IO) {
@@ -107,28 +108,20 @@ suspend fun getMusicStreamUrl(botToken: String, fileID: String): String? {
             val jsonData = connection.inputStream.bufferedReader().readText()
             connection.disconnect()
 
-            Log.d("SupabaseStorage", "getFile response: $jsonData")
-
             val filePath = JSONObject(jsonData)
                 .getJSONObject("result")
                 .getString("file_path")
 
             val downloadUrl = "https://api.telegram.org/file/bot$botToken/$filePath"
-            // cache it
             MusicCacheManager.putStreamUrl(fileID, downloadUrl)
             downloadUrl
         } catch (e: Exception) {
             Log.e("SupabaseStorage", "Failed to get music stream URL", e)
-            e.printStackTrace()
             null
         }
     }
 }
 
-/**
- * Downloads the full file (DEPRECATED for immediate streaming), but now backed by MusicCacheManager.
- * Returns local file absolute path when the file is present or successfully downloaded, else null.
- */
 suspend fun retrieveMusicFile(
     context: Context,
     botToken: String,
@@ -136,15 +129,9 @@ suspend fun retrieveMusicFile(
 ): String? {
     return withContext(Dispatchers.IO) {
         try {
-            // Get stream URL (possibly cached)
             val streamUrl = getMusicStreamUrl(botToken, fileID) ?: return@withContext null
-
-            // Deterministic cache filename
             val fileName = "tg_${fileID}.opus"
-
-            // Use MusicCacheManager to download if missing
-            val localPath = MusicCacheManager.downloadIfMissing(context, streamUrl, fileName)
-            localPath
+            MusicCacheManager.downloadIfMissing(context, streamUrl, fileName)
         } catch (e: Exception) {
             e.printStackTrace()
             null

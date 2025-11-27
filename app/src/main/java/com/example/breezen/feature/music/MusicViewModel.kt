@@ -2,6 +2,7 @@ package com.example.breezen.feature.music
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.breezen.core.network.Category
+import com.example.breezen.core.network.ErrorReportBody
 import com.example.breezen.core.network.MusicCacheManager
 import com.example.breezen.core.network.RetroFitClient
 import com.example.breezen.core.network.SUPABASE_API_KEY_ANON
@@ -21,10 +23,10 @@ import com.example.breezen.core.network.getMusicStreamUrl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 import androidx.compose.runtime.mutableStateOf as mutableStateOf2
 
-// ... (PlayerLoadState and PlayerUiState data classes are unchanged) ...
 enum class PlayerLoadState { IDLE, INITIAL, TRANSITIONING }
 data class PlayerUiState(
     val currentSong: Song? = null,
@@ -33,7 +35,8 @@ data class PlayerUiState(
     val isBuffering: Boolean = false,
     val dominantColor: Color = Color(0xFF444444),
     val nextUpSong: Song? = null,
-    val nextStreamUrl: String = ""
+    val nextStreamUrl: String = "",
+    val error: String? = null // UI State error field
 )
 
 
@@ -49,9 +52,7 @@ class TabViewModel : ViewModel() {
     private val _currentPlaylist = mutableStateOf<List<Song>>(emptyList())
     private var _currentSongIndex = -1
 
-    // --- NEW: Color cache map for INSTANT loading ---
     val songColorCache = mutableStateMapOf<String, Color>()
-    // --- END NEW ---
 
     val playerUiState: State<PlayerUiState> = _playerUiState
     val tabs: State<List<Tab>> = _tabs
@@ -66,7 +67,6 @@ class TabViewModel : ViewModel() {
     var isShuffleEnabled by mutableStateOf2(false)
     var repeatMode: RepeatMode by mutableStateOf2(RepeatMode.OFF)
 
-    // Pass context
     fun fetchSongData(context: Context) {
         viewModelScope.launch {
             try {
@@ -76,33 +76,18 @@ class TabViewModel : ViewModel() {
                 val resultCategory = RetroFitClient.api.getCategories(SUPABASE_API_KEY_ANON, "Bearer $SUPABASE_API_KEY_ANON")
                 _categories.value = resultCategory.groupBy { it.tab_id }
 
+                // API already filters got_error=false via query, but safety filter here too
                 val resultSong = RetroFitClient.api.getSongs(SUPABASE_API_KEY_ANON, "Bearer $SUPABASE_API_KEY_ANON")
+                    .filter { !it.got_error }
+
                 _songs.value = resultSong.groupBy { it.category_id }
                 _allSongs.value = resultSong
-
 
             } catch (e: Exception) {
                 Log.e("TabsViewModel", "Failed to fetch song data", e)
             }
         }
     }
-
-//    // --- NEW: Helper to parse and cache colors ---
-//    private fun populateColorCache(songs: List<Song>) {
-//        val defaultColor = Color(0xFF444444)
-//        for (song in songs) {
-//            val color = try {
-//                if (song.dominant_color != null) {
-//                    Color(song.dominant_color.toColorInt())
-//                } else {
-//                    defaultColor
-//                }
-//            } catch (e: Exception) {
-//                defaultColor
-//            }
-//            songColorCache[song.id] = color
-//        }
-//    }
 
     fun getDominantColor(song: Song?): Color {
         val raw = song?.dominant_color ?: return Color(0xFF444444)
@@ -117,37 +102,36 @@ class TabViewModel : ViewModel() {
         _currentPlaylist.value = playlist
         _currentSongIndex = playlist.indexOf(song)
 
-        // --- FIX: Get color from the cache INSTANTLY ---
-        val dominantColor = songColorCache[song.id] ?: Color(0xFF444444)
+        val dominantColor = songColorCache[song.id] ?: getDominantColor(song)
 
         _playerUiState.value = PlayerUiState(
             loadState = PlayerLoadState.INITIAL,
-            dominantColor = dominantColor // Set it immediately
+            dominantColor = dominantColor
         )
-        // --- END FIX ---
-
         prepareSongInternal(context, song, PlayerLoadState.INITIAL)
     }
 
-    // --- DELETED: precacheDominantColor() function ---
+    // --- NEW: Error Reporting ---
+    private fun reportPlaybackError(song: Song, errorDesc: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                RetroFitClient.api.reportError(
+                    SUPABASE_API_KEY_ANON,
+                    "Bearer $SUPABASE_API_KEY_ANON",
+                    "id.eq.${song.id}", // Supabase query syntax
+                    ErrorReportBody(got_error = true, got_error_desc = errorDesc)
+                )
+                Log.d("ErrorReporter", "Reported error for song ${song.id}")
+            } catch (e: Exception) {
+                Log.e("ErrorReporter", "Failed to report error", e)
+            }
+        }
+    }
 
-    // ... (rest of functions are the same) ...
-
+    // ... (toggleShuffle, toggleRepeat, onPlayerReadyAndImageLoaded, setIsBuffering omitted for brevity, identical to prev) ...
     fun toggleShuffle() {
         isShuffleEnabled = !isShuffleEnabled
-        viewModelScope.launch {
-            val nextSong = getNextUpSong()
-            val nextStreamUrl = nextSong?.let {
-                getMusicStreamUrl(
-                    TELEGRAM_BOT_TOKEN,
-                    it.stream_id
-                )
-            } ?: ""
-            _playerUiState.value = _playerUiState.value.copy(
-                nextUpSong = nextSong,
-                nextStreamUrl = nextStreamUrl
-            )
-        }
+        viewModelScope.launch { updateNextUp() }
     }
 
     fun toggleRepeat() {
@@ -156,19 +140,18 @@ class TabViewModel : ViewModel() {
             RepeatMode.ALL -> RepeatMode.ONE
             RepeatMode.ONE -> RepeatMode.OFF
         }
-        viewModelScope.launch {
-            val nextSong = getNextUpSong()
-            val nextStreamUrl = nextSong?.let {
-                getMusicStreamUrl(
-                    TELEGRAM_BOT_TOKEN,
-                    it.stream_id
-                )
-            } ?: ""
-            _playerUiState.value = _playerUiState.value.copy(
-                nextUpSong = nextSong,
-                nextStreamUrl = nextStreamUrl
-            )
-        }
+        viewModelScope.launch { updateNextUp() }
+    }
+
+    private suspend fun updateNextUp() {
+        val nextSong = getNextUpSong()
+        val nextStreamUrl = nextSong?.let {
+            getMusicStreamUrl(TELEGRAM_BOT_TOKEN, it.stream_id)
+        } ?: ""
+        _playerUiState.value = _playerUiState.value.copy(
+            nextUpSong = nextSong,
+            nextStreamUrl = nextStreamUrl
+        )
     }
 
     fun onPlayerReadyAndImageLoaded() {
@@ -182,76 +165,82 @@ class TabViewModel : ViewModel() {
     private fun prepareSongInternal(context: Context, song: Song, triggeredBy: PlayerLoadState) {
         viewModelScope.launch {
             try {
-                val streamUrlDeferred = async {
-                    getMusicStreamUrl(
-                        TELEGRAM_BOT_TOKEN,
-                        song.stream_id
-                    )
-                }
+                // 1. Try to get Stream URL
+                val streamUrlDeferred = async { getMusicStreamUrl(TELEGRAM_BOT_TOKEN, song.stream_id) }
                 val nextSongDeferred = async { getNextUpSong() }
 
                 val musicStreamUrl = streamUrlDeferred.await()
                 val nextSong = nextSongDeferred.await()
 
-                val localFile =
-                    MusicCacheManager.getCachedFile(context, "tg_${song.stream_id}.opus")
-                        .takeIf { it.exists() }?.absolutePath
+                // Check for failure
+                if (musicStreamUrl.isNullOrEmpty()) {
+                    throw Exception("Stream URL is null or empty")
+                }
 
+                val localFile = MusicCacheManager.getCachedFile(context, "tg_${song.stream_id}.opus")
+                    .takeIf { it.exists() }?.absolutePath
+                val effectiveUrl = localFile ?: musicStreamUrl
+
+                // Pre-cache next song
                 nextSong?.let { ns ->
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
                             val cachedNextUrl = MusicCacheManager.getCachedStreamUrl(ns.stream_id)
-                                ?: getMusicStreamUrl(
-                                    TELEGRAM_BOT_TOKEN,
-                                    ns.stream_id
-                                )
+                                ?: getMusicStreamUrl(TELEGRAM_BOT_TOKEN, ns.stream_id)
                             if (!cachedNextUrl.isNullOrEmpty()) {
-                                MusicCacheManager.downloadIfMissing(
-                                    context,
-                                    cachedNextUrl,
-                                    "tg_${ns.stream_id}.opus"
-                                )
+                                MusicCacheManager.downloadIfMissing(context, cachedNextUrl, "tg_${ns.stream_id}.opus")
                             }
-                        } catch (ignored: Exception) {
-                        }
+                        } catch (ignored: Exception) {}
                     }
                 }
 
-                val effectiveUrl = localFile ?: musicStreamUrl ?: ""
-
                 val nextStreamUrl = nextSong?.let {
-                    MusicCacheManager.getCachedStreamUrl(it.stream_id) ?: getMusicStreamUrl(
-                        TELEGRAM_BOT_TOKEN,
-                        it.stream_id
-                    )
+                    MusicCacheManager.getCachedStreamUrl(it.stream_id) ?: getMusicStreamUrl(TELEGRAM_BOT_TOKEN, it.stream_id)
                 } ?: ""
 
-                if (effectiveUrl.isNotEmpty()) {
-                    _playerUiState.value = _playerUiState.value.copy(
-                        currentSong = song,
-                        streamUrl = effectiveUrl,
-                        loadState = triggeredBy,
-                        isBuffering = true,
-                        nextUpSong = nextSong,
-                        nextStreamUrl = nextStreamUrl
-                    )
-                } else {
-                    Log.e("TabViewModel", "Failed to retrieve stream URL for ${song.title}")
-                }
+                _playerUiState.value = _playerUiState.value.copy(
+                    currentSong = song,
+                    streamUrl = effectiveUrl,
+                    loadState = triggeredBy,
+                    isBuffering = true,
+                    nextUpSong = nextSong,
+                    nextStreamUrl = nextStreamUrl,
+                    error = null
+                )
+
             } catch (e: Exception) {
-                Log.e("TabViewModel", "Error in prepareSongInternal", e)
+                // --- ERROR HANDLING IMPLEMENTATION ---
+                Log.e("TabViewModel", "Critical Error in prepareSongInternal", e)
+
+                // 1. Report to DB
+                reportPlaybackError(song, e.message ?: "Unknown playback error")
+
+                // 2. Remove from local list so we don't pick it again immediately
+                val filteredList = _currentPlaylist.value.filter { it.id != song.id }
+                _currentPlaylist.value = filteredList
+
+                // 3. Notify UI (Toast)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error playing ${song.title}. Removing from playlist.", Toast.LENGTH_SHORT).show()
+                }
+
+                // 4. Try Next Song or Stop
+                if (filteredList.isNotEmpty()) {
+                    playNextSong(context, forceManual = true)
+                } else {
+                    // Playlist dead, exit player
+                    // In a real app, you might want to navigateBack via an event channel
+                    _playerUiState.value = _playerUiState.value.copy(loadState = PlayerLoadState.IDLE, currentSong = null)
+                }
             }
         }
     }
 
+    // ... (getNextIndex, getNextUpSong, playPreviousSong, playNextSong same as before) ...
     private fun getNextIndex(peek: Boolean = false): Int {
         if (_currentPlaylist.value.isEmpty()) return -1
-
         when (repeatMode) {
-            RepeatMode.ONE -> {
-                return _currentSongIndex
-            }
-
+            RepeatMode.ONE -> return _currentSongIndex
             RepeatMode.ALL, RepeatMode.OFF -> {
                 if (isShuffleEnabled) {
                     if (_currentPlaylist.value.size <= 1) return _currentSongIndex
@@ -274,102 +263,49 @@ class TabViewModel : ViewModel() {
 
     private fun getNextUpSong(forceNext: Boolean = false): Song? {
         if (_currentPlaylist.value.isEmpty()) return null
-
         val originalRepeatMode = repeatMode
-        if (forceNext && repeatMode == RepeatMode.ONE) {
-            repeatMode = RepeatMode.ALL
-        }
-
+        if (forceNext && repeatMode == RepeatMode.ONE) repeatMode = RepeatMode.ALL
         val nextIndex = getNextIndex(peek = true)
-
-        if (forceNext) {
-            repeatMode = originalRepeatMode
-        }
-
-        return if (nextIndex != -1 && nextIndex != _currentSongIndex) {
-            _currentPlaylist.value.getOrNull(nextIndex)
-        } else {
-            null
-        }
+        if (forceNext) repeatMode = originalRepeatMode
+        return if (nextIndex != -1 && nextIndex != _currentSongIndex) _currentPlaylist.value.getOrNull(nextIndex) else null
     }
 
     fun playPreviousSong(context: Context) {
         val playlist = _currentPlaylist.value
         if (playlist.isEmpty()) return
-
-        _currentSongIndex =
-            if (_currentSongIndex - 1 < 0) playlist.size - 1 else _currentSongIndex - 1
-
+        _currentSongIndex = if (_currentSongIndex - 1 < 0) playlist.size - 1 else _currentSongIndex - 1
         val previousSong = playlist[_currentSongIndex]
-
-        val newNextUpSong = getNextUpSong()
-
-        // --- FIX: Get color from cache ---
         val dominantColor = songColorCache[previousSong.id] ?: Color(0xFF444444)
-
-        _playerUiState.value = _playerUiState.value.copy(
-            currentSong = previousSong,
-            nextUpSong = newNextUpSong,
-            isBuffering = true,
-            dominantColor = dominantColor // Set it
-        )
-
+        _playerUiState.value = _playerUiState.value.copy(currentSong = previousSong, nextUpSong = getNextUpSong(), isBuffering = true, dominantColor = dominantColor)
         prepareSongInternal(context, previousSong, _playerUiState.value.loadState)
     }
 
     fun playNextSong(context: Context, forceManual: Boolean = false) {
         val playlist = _currentPlaylist.value
         if (playlist.isEmpty()) return
-
         if (repeatMode == RepeatMode.ONE && !forceManual) {
-            Log.d("TabViewModel", "Repeating single song")
-            val currentSong = playlist[_currentSongIndex]
-            prepareSongInternal(context, currentSong, _playerUiState.value.loadState)
+            prepareSongInternal(context, playlist[_currentSongIndex], _playerUiState.value.loadState)
             return
         }
-
         val nextIndex: Int
         if (isShuffleEnabled) {
-            if (playlist.size <= 1) return // No next song
+            if (playlist.size <= 1) return
             var newIndex = _currentSongIndex
-            while (newIndex == _currentSongIndex) {
-                newIndex = Random.nextInt(0, playlist.size)
-            }
+            while (newIndex == _currentSongIndex) newIndex = Random.nextInt(0, playlist.size)
             nextIndex = newIndex
         } else {
             val newIndex = _currentSongIndex + 1
             if (newIndex >= playlist.size) {
-                if (repeatMode == RepeatMode.ALL || (repeatMode == RepeatMode.ONE && forceManual)) {
-                    nextIndex = 0 // Wrap to start
-                } else {
-                    Log.d("TabViewModel", "End of playlist, stopping.")
-                    return
-                }
+                if (repeatMode == RepeatMode.ALL || (repeatMode == RepeatMode.ONE && forceManual)) nextIndex = 0
+                else return
             } else {
                 nextIndex = newIndex
             }
         }
-
-        if (nextIndex == -1) {
-            Log.d("TabViewModel", "End of playlist, stopping.")
-            return
-        }
-
         _currentSongIndex = nextIndex
         val nextSong = playlist[_currentSongIndex]
-
-        val nextUpSong = getNextUpSong()
-
-        // --- FIX: Get color from cache ---
         val dominantColor = songColorCache[nextSong.id] ?: Color(0xFF444444)
-
-        _playerUiState.value = _playerUiState.value.copy(
-            currentSong = nextSong,
-            nextUpSong = nextUpSong,
-            isBuffering = true,
-            dominantColor = dominantColor // Set it
-        )
-
+        _playerUiState.value = _playerUiState.value.copy(currentSong = nextSong, nextUpSong = getNextUpSong(), isBuffering = true, dominantColor = dominantColor)
         prepareSongInternal(context, nextSong, _playerUiState.value.loadState)
     }
 }
