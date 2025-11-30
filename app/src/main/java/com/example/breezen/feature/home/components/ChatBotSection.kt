@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,15 +31,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.breezen.R
 import com.example.breezen.core.ui.theme.DMSansFontFamily
+import com.example.breezen.feature.chatbot.ChatViewModel
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun ChatBotSection() {
+fun ChatBotSection(chatViewModel: ChatViewModel, navController: NavController) {
+
+    var input by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -95,20 +108,53 @@ fun ChatBotSection() {
             var inputText by remember { mutableStateOf("") }
 
             BasicTextField(
-                value = inputText,
-                onValueChange = { inputText = it },
+                value = input,
+                onValueChange = { input = it },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
-                decorationBox = { innerTextField ->
-                    if (inputText.isEmpty()) {
-                        Text("Type your thoughts...", color = MaterialTheme.colorScheme.onSurface)
+                textStyle = LocalTextStyle.current.copy(
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Normal
+                ),
+                cursorBrush = SolidColor(Color.White),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = {
+                    if (input.isNotBlank()) {
+                        chatViewModel.sendMessage(input.trim())
+                        input = ""
+                        keyboardController?.hide()
                     }
-                    innerTextField()
-                })
+
+                    navController.navigate("chatbot")
+                }),
+                decorationBox = { innerTextField ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (input.isEmpty()) {
+                            Text(
+                                "Message Zeni...",
+                                style = LocalTextStyle.current.copy(
+                                    color = Color.White.copy(alpha = 0.48f),
+                                    fontSize = 15.sp
+                                )
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
 
             IconButton(
-                onClick = { /* handle send */ },
+                onClick = {
+
+                    if (input.isNotBlank()) {
+                        chatViewModel.sendMessage(input.trim())
+                        input = ""
+                        keyboardController?.hide()
+                    }
+
+                    navController.navigate("chatbot")
+                },
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)

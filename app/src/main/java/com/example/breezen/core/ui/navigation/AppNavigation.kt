@@ -1,7 +1,9 @@
 package com.example.breezen.core.ui.navigation
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -40,6 +42,7 @@ import com.example.breezen.feature.breathe.BreatheScreen
 import com.example.breezen.feature.chatbot.ChatBotScreen
 import com.example.breezen.feature.chatbot.ChatViewModel
 import com.example.breezen.feature.home.HomeContent
+import com.example.breezen.feature.home.HomeViewModel
 import com.example.breezen.feature.meditation.MeditationGuidedScreen
 import com.example.breezen.feature.meditation.MeditationPlayer
 import com.example.breezen.feature.meditation.MeditationViewModel
@@ -101,6 +104,7 @@ fun rememberAppNavigationState(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedGetBackStackEntry")
 @Composable
 fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
@@ -114,7 +118,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
     val chatViewModel: ChatViewModel = viewModel()
     val musicViewModel: TabViewModel = viewModel()
     val meditationViewModel: MeditationViewModel = viewModel()
-
+    val homeViewModel: HomeViewModel = viewModel()
     LaunchedEffect(Unit) {
         val completed = onboardingPreferences.isOnboardingCompleted()
         isOnboardingCompleted = completed
@@ -197,7 +201,10 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 composable("home") {
                     HomeContent(
                         navController = navigationState.navController,
-                        viewModel = musicViewModel
+                        viewModel = musicViewModel,
+                        meditationViewModel = meditationViewModel,
+                        chatViewModel = chatViewModel,
+                        homeViewModel = homeViewModel
                     )
                 }
                 composable("music") {

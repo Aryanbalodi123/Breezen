@@ -1,7 +1,9 @@
 package com.example.breezen.feature.home
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,24 +21,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.breezen.core.data.MoodPreference
 import com.example.breezen.core.network.Song
+import com.example.breezen.feature.chatbot.ChatViewModel
 import com.example.breezen.feature.home.components.AffirmationSection
 import com.example.breezen.feature.home.components.AppHeader
 import com.example.breezen.feature.home.components.ChatBotSection
 import com.example.breezen.feature.home.components.FeaturedSection
 import com.example.breezen.feature.home.components.HeaderSection
 import com.example.breezen.feature.home.components.MoodSelector
+import com.example.breezen.feature.meditation.MeditationViewModel
 import com.example.breezen.feature.music.TabViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun HomeContent(
     navController: NavController,
     viewModel: TabViewModel,
-    homeViewModel: HomeViewModel = viewModel()
+    meditationViewModel: MeditationViewModel,
+    chatViewModel: ChatViewModel,
+    homeViewModel: HomeViewModel
 ) {
 
     val context = LocalContext.current
@@ -94,11 +100,14 @@ fun HomeContent(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            FeaturedSection(navController, isLoading, viewModel, featuredSongs)
+            FeaturedSection(
+                navController, isLoading,
+                viewModel = meditationViewModel
+            )
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            ChatBotSection()
+            ChatBotSection(chatViewModel , navController)
 
             Spacer(modifier = Modifier.height(28.dp))
         }
