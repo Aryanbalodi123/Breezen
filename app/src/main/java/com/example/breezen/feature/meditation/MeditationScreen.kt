@@ -92,8 +92,9 @@ fun MeditationGuidedScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF070707), Color(0xFF000000))))
-            .padding(top = 48.dp)
+            .padding(top = 48.dp, bottom = 40.dp)
     ) {
+
         // ... (Header Text Section remains the same) ...
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Text("Explore", fontFamily = FunnelDisplayFamily, fontSize = 54.sp, fontWeight = FontWeight.Bold, color = Color.White)

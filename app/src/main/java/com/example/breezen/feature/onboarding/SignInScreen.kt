@@ -39,12 +39,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.breezen.core.data.UserPreferences
 import com.example.breezen.core.network.AuthService
 import com.example.breezen.core.ui.theme.BrandGreenDarker
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
@@ -70,6 +72,7 @@ fun SignInScreen(
     LaunchedEffect(Unit) {
         visible = true
     }
+    val context = LocalContext.current
 
     val textFieldColors = TextFieldDefaults.colors(
         focusedContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
@@ -223,6 +226,12 @@ fun SignInScreen(
                                 errorMessage = null
                                 try {
                                     AuthService.signIn(email, password)
+
+                                    val user = AuthService.getCurrentUser()
+                                    user?.username?.let { fetchedName ->
+                                        UserPreferences.saveUsername(context, fetchedName)
+                                    }
+
                                     onSignInSuccess()
                                 } catch (e: Exception) {
                                     errorMessage = e.message ?: "An unknown error occurred."

@@ -55,7 +55,6 @@ object AuthService {
 
     suspend fun getCurrentUser(): User? {
         return try {
-            // Wait until Supabase Auth is fully initialized
             client.auth.sessionStatus.first { status ->
                 status !is SessionStatus.Initializing
             }
