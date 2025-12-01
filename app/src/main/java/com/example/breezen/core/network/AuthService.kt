@@ -13,11 +13,12 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 @Serializable
-data class User(val username: String)
+data class User(val username: String, val email: String? = null)
 
 object AuthService {
 
-    private val client = createSupabaseClient(
+    // Assuming these constants are defined in your project
+    val client = createSupabaseClient(
         supabaseUrl = SUPABASE_URL_AUTH,
         supabaseKey = SUPABASE_API_KEY_ANON
     ) {
@@ -63,9 +64,11 @@ object AuthService {
 
             val username = user.userMetadata?.get("username")
                 ?.jsonPrimitive
-                ?.content
+                ?.content ?: "Breeze User"
 
-            username?.let { User(it) }
+            val email = user.email
+
+            User(username, email)
 
         } catch (e: Exception) {
             Log.e("AuthService", "Error getting current user", e)
@@ -73,7 +76,33 @@ object AuthService {
         }
     }
 
+    // --- FIX: Use updateUser instead of modifyUser ---
+    suspend fun updateProfile(username: String?, email: String?) {
+        try {
+            // Replaced modifyUser with updateUser
+            client.auth.updateUser {
+                if (!email.isNullOrBlank()) {
+                    this.email = email
+                }
+                // Update metadata for username
+                if (!username.isNullOrBlank()) {
+                    this.data = buildJsonObject {
+                        put("username", username)
+                    }
+                }
+            }
+            Log.d("AuthService", "Profile updated successfully")
+        } catch (e: Exception) {
+            Log.e("AuthService", "Failed to update profile", e)
+            throw e
+        }
+    }
 
-
-
+    suspend fun logout() {
+        try {
+            client.auth.signOut()
+        } catch (e: Exception) {
+            Log.e("AuthService", "Logout failed", e)
+        }
+    }
 }

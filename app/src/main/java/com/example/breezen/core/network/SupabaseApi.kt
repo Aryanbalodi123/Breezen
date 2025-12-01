@@ -47,6 +47,9 @@ data class ErrorReportBody(
     val got_error_desc: String
 )
 
+data class FeedbackBody(val feedback: String)
+
+
 // ------------------ RETROFIT API ------------------
 interface SupabaseAPI {
     @GET("tabs")
@@ -82,7 +85,20 @@ interface SupabaseAPI {
         @Query("id") id: String = "eq.ID_HERE", // Retrofit format placeholder, handled in call
         @Body body: ErrorReportBody
     )
+
+
+
+        @POST("feedback")
+        suspend fun sendFeedback(
+            @Header("apiKey") apiKey: String,
+            @Header("Authorization") auth: String,
+            @Body body: FeedbackBody
+        )
+
 }
+
+
+
 
 object RetroFitClient {
     val api: SupabaseAPI by lazy {

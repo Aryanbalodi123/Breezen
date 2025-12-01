@@ -164,6 +164,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.animation.core)
+    implementation(libs.androidx.compose.ui)
 
     // Testing
     testImplementation("junit:junit:4.13.2")

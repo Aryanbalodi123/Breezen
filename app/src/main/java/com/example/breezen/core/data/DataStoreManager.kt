@@ -14,21 +14,6 @@ import java.time.LocalDate
 val Context.dataStore by preferencesDataStore("app_settings")
 
 
-object AppPreferences {
-
-    private val MY_BOOLEAN = booleanPreferencesKey("my_boolean")
-
-    suspend fun setMyBoolean(context: Context, value: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[MY_BOOLEAN] = value
-        }
-    }
-
-    fun getMyBoolean(context: Context) =
-        context.dataStore.data.map { prefs ->
-            prefs[MY_BOOLEAN] ?: false        // default = false
-        }
-}
 
 object MoodPreference {
     private val MOOD_BOOLEAN = booleanPreferencesKey("mood_boolean")

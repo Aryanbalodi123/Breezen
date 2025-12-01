@@ -83,7 +83,7 @@ fun HomeContent(
                 .padding(vertical = 8.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            AppHeader(user?.username ?: "")
+            AppHeader(user?.username ?: "", navController)
 
             Spacer(modifier = Modifier.height(28.dp))
 

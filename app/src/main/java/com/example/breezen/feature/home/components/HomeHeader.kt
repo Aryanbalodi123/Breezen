@@ -1,6 +1,7 @@
 package com.example.breezen.feature.home.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,11 +25,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import kotlinx.coroutines.delay
 
 @Composable
-fun AppHeader(username: String) {
+fun AppHeader(username: String , navController: NavController) {
     var breezenText by remember { mutableStateOf("") }
 
     // Typewriter effect animation
@@ -60,12 +62,12 @@ fun AppHeader(username: String) {
         )
         Spacer(Modifier.weight(1f))
 
-        UserAvatar(username = username)
+        UserAvatar(username = username, navController)
     }
 }
 
 @Composable
-fun UserAvatar(username: String) {
+fun UserAvatar(username: String , navController: NavController) {
     val initial = username.firstOrNull()?.uppercaseChar() ?: '?'
     // This is an artistic choice, not a theme color, so it stays
     val gradientBrush = Brush.linearGradient(
@@ -79,7 +81,10 @@ fun UserAvatar(username: String) {
         modifier = Modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(gradientBrush),
+            .background(gradientBrush)
+            .clickable{
+                navController.navigate("settings")
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(
