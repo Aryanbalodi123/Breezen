@@ -1,94 +1,69 @@
 package com.example.breezen.feature.chatbot
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.breezen.R
+import com.example.breezen.feature.chatbot.components.APP_BACKGROUND
 import com.example.breezen.feature.chatbot.components.EmptyStateLarge
 import com.example.breezen.feature.chatbot.components.LoadingBubble
 import com.example.breezen.feature.chatbot.components.MessageBubble
 import com.example.breezen.feature.chatbot.components.TopHeader
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
 
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
+fun ChatBotScreen(
+    navController: NavHostController,
+    viewModel: ChatViewModel
+) {
     val messages = viewModel.messages
     val loading by viewModel.loading.collectAsState()
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-
-    // Create HazeState for the background blur effect
-    val hazeState = remember { HazeState() }
-    val glassHazeStyle = HazeStyle(
-        blurRadius = 30.dp,
-        tint = HazeTint(MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)),
-        noiseFactor = 0f
-    )
+    val count = viewModel.dailySessionCount
 
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
-        }
+        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.Transparent // Make surface transparent to show background
-    ) {
-        // Background Image with Haze Effect
-        Box(modifier = Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(R.drawable.chatbot_bg), // Use the specified image
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeEffect(state = hazeState, style = glassHazeStyle), // Apply haze
-                contentScale = ContentScale.Crop
+    Scaffold(
+        containerColor = APP_BACKGROUND,
+        topBar = {
+            TopHeader(
+                dailyCount = count,
+                onNewChatClicked = { viewModel.clearChat() },
+                navController = navController
             )
         }
+    ) { paddingValues ->
 
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .background(APP_BACKGROUND)
+                .padding(paddingValues)
         ) {
-            TopHeader(onNewChatClicked = { viewModel.clearChat() }, navController)
 
             LazyColumn(
                 state = listState,
@@ -99,14 +74,12 @@ fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
             ) {
+
                 if (messages.isEmpty() && !loading) {
                     item {
-                        EmptyStateLarge(
-                            onSendPrompt = { promptText ->
-                                viewModel.sendMessage(promptText)
-                            },
-                            hazeState = hazeState
-                        )
+                        EmptyStateLarge {
+                            viewModel.sendMessage(it)
+                        }
                     }
                 }
 
@@ -114,16 +87,17 @@ fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
                     MessageBubble(
                         message = message,
                         sender = sender,
-                        onCopy = { clipboardManager.setText(AnnotatedString(it)) },
+                        onCopy = {
+                            clipboardManager.setText(AnnotatedString(it))
+                        },
                         onShare = {
-                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                putExtra(Intent.EXTRA_TEXT, it)
-                                type = "text/plain"
-                            }
-                            context.startActivity(Intent.createChooser(sendIntent, "Share via"))
+                            val intent = Intent(Intent.ACTION_SEND)
+                            intent.putExtra(Intent.EXTRA_TEXT, it)
+                            intent.type = "text/plain"
+                            context.startActivity(Intent.createChooser(intent, "Share via"))
                         },
                         onRegenerate = {
-                            messages.lastOrNull { m -> m.first == "USER" }?.second?.let {
+                            messages.lastOrNull { pair -> pair.first == "USER" }?.second?.let {
                                 viewModel.sendMessage(it)
                             }
                         }
@@ -131,29 +105,6 @@ fun ChatBotScreen(navController: NavHostController, viewModel: ChatViewModel) {
                 }
 
                 if (loading) item { LoadingBubble() }
-            }
-
-            AnimatedVisibility(
-                visible = loading,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = MaterialTheme.colorScheme.primary, // Use theme
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Generating response...",
-                        color = MaterialTheme.colorScheme.onSurface, // Use theme
-                        style = MaterialTheme.typography.bodySmall // Use theme
-                    )
-                }
             }
         }
     }

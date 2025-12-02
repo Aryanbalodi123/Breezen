@@ -1,6 +1,8 @@
 package com.example.breezen.feature.home.components
 
 import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,6 +46,7 @@ import com.example.breezen.R
 import com.example.breezen.core.ui.theme.DMSansFontFamily
 import com.example.breezen.feature.chatbot.ChatViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun ChatBotSection(chatViewModel: ChatViewModel, navController: NavController) {
@@ -59,7 +62,6 @@ fun ChatBotSection(chatViewModel: ChatViewModel, navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // This gradient is artistic and unique, so it stays
                 .background(
                     Brush.radialGradient(
                         colors = listOf(

@@ -48,6 +48,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,9 +82,6 @@ import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -98,13 +96,26 @@ private val TextGray = Color(0xFF546E7A)
 // ----------------- Models -----------------
 data class Language(val name: String, val color: Color)
 
-private val myLanguages = listOf(
-    Language("Android", Color(0xFFAED581)),
-    Language("Kotlin", Color(0xFFFFF59D)),
-    Language("Compose", Color(0xFF81D4FA)),
-    Language("Java", Color(0xFFE0E0E0)),
-    Language("Git", Color(0xFFFFCCBC)),
-    Language("Figma", Color(0xFFCE93D8))
+val myLanguages = listOf(
+    // Programming Languages
+    Language("Java", Color(0xFFFFCCBC)),       // Soft Terracotta
+    Language("C", Color(0xFFB0BEC5)),          // Mist Grey
+    Language("C++", Color(0xFF90CAF9)),        // Pastel Blue
+    Language("Python", Color(0xFFA5D6A7)),     // Soft Sage Green
+    Language("JavaScript", Color(0xFFFFF59D)), // Your Theme's Yellow Accent
+    Language("TypeScript", Color(0xFF9FA8DA)), // Periwinkle
+    Language("SQL", Color(0xFFEF9A9A)),        // Soft Coral
+
+    // Mobile
+    Language("Kotlin", Color(0xFFCE93D8)),     // Pastel Lavender
+    Language("Compose", Color(0xFF81D4FA)),    // Sky Blue
+
+    // Web & DB
+    Language("React", Color(0xFF80DEEA)),      // Soft Aqua
+    Language("Next.js", Color(0xFF546E7A)),    // Soft Slate (Darker pastel for contrast)
+    Language("Tailwind", Color(0xFF4DB6AC)),   // Muted Teal
+    Language("Flask", Color(0xFFA1887F)),      // Earthy Brown
+    Language("PostgresSQL", Color(0xFFC5E1A5)) // Matcha Green
 )
 
 data class Ball(
@@ -140,7 +151,7 @@ fun DeveloperProfileScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.6f)
+                .fillMaxHeight()
         ) {
             // Decorative Circle
             Box(
@@ -194,8 +205,8 @@ fun DeveloperProfileScreen(
                         contentScale = ContentScale.Fit, // full image, no crop
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .offset(x = 70.dp ,y = (-100).dp)
-                            .fillMaxHeight(.9f) // responsive height, 55% of screen
+                            .offset(x = 80.dp ,y = -(50).dp)
+                            .fillMaxHeight(.55f) // responsive height, 55% of screen
                             .wrapContentWidth()    // width adjusts automatically
                             .zIndex(1f)
                     )
@@ -204,20 +215,18 @@ fun DeveloperProfileScreen(
             }
         }
 
-        // ================= BOTTOM SHEET ====================
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .fillMaxHeight(0.65f)
+                .fillMaxHeight(0.55f)
                 .shadow(32.dp, RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp))
                 .background(DarkGreen, RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp))
-                .padding(28.dp)
-                .padding(bottom = 100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            // --- FIXED PILL AT TOP ---
             Box(
                 modifier = Modifier
                     .width(40.dp)
@@ -225,49 +234,60 @@ fun DeveloperProfileScreen(
                     .background(PureWhite.copy(alpha = 0.2f), CircleShape)
             )
 
-            Text(
-                text = "\" Building seamless mobile experiences with code and coffee.\" ",
-                color = YellowAccent,
-                style = AppTypography.displayMedium,
-                fontFamily = FunnelDisplayFamily,
-                modifier = Modifier
-                    .fillMaxWidth()
-            )
+            Spacer(Modifier.height(16.dp))
 
-            ModernPillButton("WHAT I KNOW", YellowAccent, DarkGreen) { showSkills = true }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            // --- EVERYTHING ELSE SPACED EVENLY ---
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceEvenly
             ) {
-                SocialIconBtn(R.drawable.github, "GitHub") {
-                    openUrl(navController.context, "https://github.com")
-                }
-                SocialIconBtn(R.drawable.linkedin, "LinkedIn") {
-                    openUrl(navController.context, "https://linkedin.com")
-                }
-                SocialIconBtn(R.drawable.gmail, "Email") {
-                    openEmail(navController.context)
-                }
-            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ModernActionButton(
-                    "Feedback",
-                    Icons.AutoMirrored.Rounded.Message,
-                    false,
-                    Modifier.weight(1f)
-                ) { showFeedbackDialog = true }
+                Text(
+                    text = "\" Building seamless mobile experiences with code and coffee.\" ",
+                    color = YellowAccent,
+                    style = AppTypography.displayMedium,
+                    fontFamily = FunnelDisplayFamily,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                ModernActionButton(
-                    "Buy Coffee",
-                    Icons.Rounded.Coffee,
-                    true,
-                    Modifier.weight(1f)
-                ) { showDonateDialog = true }
+                ModernPillButton("WHAT I KNOW", YellowAccent, DarkGreen) {
+                    showSkills = true
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    SocialIconBtn(R.drawable.github, "GitHub") {
+                        openUrl(navController.context, "https://github.com")
+                    }
+                    SocialIconBtn(R.drawable.linkedin, "LinkedIn") {
+                        openUrl(navController.context, "https://linkedin.com")
+                    }
+                    SocialIconBtn(R.drawable.gmail, "Email") {
+                        openEmail(navController.context)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ModernActionButton(
+                        "Feedback",
+                        Icons.AutoMirrored.Rounded.Message,
+                        false,
+                        Modifier.weight(1f)
+                    ) { showFeedbackDialog = true }
+
+                    ModernActionButton(
+                        "Buy Coffee",
+                        Icons.Rounded.Coffee,
+                        true,
+                        Modifier.weight(1f)
+                    ) { showDonateDialog = true }
+                }
             }
         }
 
@@ -341,27 +361,27 @@ fun LoveBox() {
 
             Spacer(modifier = Modifier.width(8.dp))
 
-      Box(    modifier = Modifier
+            Box(    modifier = Modifier
 
-          .clip(RoundedCornerShape(7.dp))
-          .background(DarkGreen)
-          .padding(horizontal = 9.dp, vertical = 6.dp)){
-          AnimatedContent(
-              targetState = index,
-              transitionSpec = {
-                  slideInVertically { it } + fadeIn() togetherWith
-                          slideOutVertically { -it } + fadeOut()
-              }
-          ) { i ->
-              Text(
-                  text = items[i],
-                  color = YellowAccent,
-                  fontSize = 18.sp,
-                  fontWeight = FontWeight.Bold,
+                .clip(RoundedCornerShape(7.dp))
+                .background(DarkGreen)
+                .padding(horizontal = 9.dp, vertical = 6.dp)){
+                AnimatedContent(
+                    targetState = index,
+                    transitionSpec = {
+                        slideInVertically { it } + fadeIn() togetherWith
+                                slideOutVertically { -it } + fadeOut()
+                    }
+                ) { i ->
+                    Text(
+                        text = items[i],
+                        color = YellowAccent,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
 
-              )
-          }
-      }
+                        )
+                }
+            }
         }
     }
 }
@@ -574,7 +594,7 @@ fun DecryptTextLine(text: String, fontSize: Int, color: Color, fontWeight: FontW
     )
 }
 
-// ----------------- Skills Physics Overlay -----------------
+// ----------------- OPTIMIZED PHYSICS OVERLAY -----------------
 
 @Composable
 fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
@@ -582,74 +602,120 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .zIndex(100f)
-            .background(DarkGreen.copy(alpha = 0.98f))
+            .background(Color.Transparent)
     ) {
         val width = maxWidth.value
         val height = maxHeight.value
+
+        // DYNAMIC SIZING: Calculate radius based on screen width
+        // Balls will be between 11% and 16% of the screen width
+        val minRadius = width * 0.11f
+        val maxRadius = width * 0.16f
 
         val balls = remember {
             languages.mapIndexed { i, lang ->
                 Ball(
                     lang,
-                    x = width / 2 + (Random.nextFloat() - 0.5f) * 100f,
-                    y = -200f - i * 100f,
+                    x = width / 2 + (Random.nextFloat() - 0.5f) * (width * 0.5f),
+                    y = -height * 0.5f - i * (maxRadius * 2), // Drop them from high up
                     vx = (Random.nextFloat() - 0.5f) * 50f,
                     vy = 0f,
-                    radius = 40f + Random.nextFloat() * 20f
+                    radius = minRadius + Random.nextFloat() * (maxRadius - minRadius)
                 )
             }.toMutableList()
         }
 
-        var trigger by remember {mutableLongStateOf(0L) }
+        var trigger by remember { mutableLongStateOf(0L) }
 
         LaunchedEffect(Unit) {
-            while (isActive) {
-                val dt = 0.016f
-                val gravity = 1000f
-                val drag = 0.99f
+            val gravity = 1500f // Stronger gravity for "heavy" feel
+            val drag = 0.99f
+            val dt = 0.016f
 
+            while (isActive) {
+                // 1. Move
                 balls.forEach { b ->
                     b.vy += gravity * dt
+                    b.vx *= drag
+                    b.vy *= drag
                     b.x += b.vx * dt
                     b.y += b.vy * dt
-
-                    if (b.y > height - b.radius) {
-                        b.y = height - b.radius
-                        b.vy *= -0.6f
-                        b.vx *= drag
-                    }
-                    if (b.x < b.radius) { b.x = b.radius; b.vx *= -0.7f }
-                    if (b.x > width - b.radius) { b.x = width - b.radius; b.vx *= -0.7f }
                 }
 
-                for (i in balls.indices) {
-                    for (j in i + 1 until balls.size) {
-                        val b1 = balls[i]
-                        val b2 = balls[j]
-                        val dx = b2.x - b1.x
-                        val dy = b2.y - b1.y
-                        val dist = sqrt(dx * dx + dy * dy)
-                        val minDist = b1.radius + b2.radius
+                // 2. Solve Collisions (Repeat for stability)
+                repeat(4) {
+                    // Wall Interactions
+                    balls.forEach { b ->
+                        // Floor
+                        if (b.y > height - b.radius) {
+                            b.y = height - b.radius
+                            b.vy *= -0.5f // Dampened bounce
+                            b.vx *= 0.9f  // Floor friction
+                        }
+                        // Ceiling (optional, prevents flying off top)
+                        if (b.y < -height * 2) {
+                            // If it flies WAY too high, push it down (safety net)
+                            b.y = -height.toFloat()
+                        }
 
-                        if (dist < minDist) {
-                            val angle = atan2(dy, dx)
-                            val tx = cos(angle)
-                            val ty = sin(angle)
-                            val overlap = minDist - dist
-
-                            b1.x -= tx * overlap * 0.5f
-                            b1.y -= ty * overlap * 0.5f
-                            b2.x += tx * overlap * 0.5f
-                            b2.y += ty * overlap * 0.5f
-
-                            val vRelX = b1.vx - b2.vx
-                            val vRelY = b1.vy - b2.vy
-                            b1.vx -= vRelX * 0.5f
-                            b1.vy -= vRelY * 0.5f
-                            b2.vx += vRelX * 0.5f
-                            b2.vy += vRelY * 0.5f
+                        // Walls
+                        if (b.x < b.radius) {
+                            b.x = b.radius
+                            b.vx *= -0.6f
+                        }
+                        if (b.x > width - b.radius) {
+                            b.x = width - b.radius
+                            b.vx *= -0.6f
                         }
                     }
+
+                    // Ball-to-Ball Interactions
+                    for (i in balls.indices) {
+                        for (j in i + 1 until balls.size) {
+                            val b1 = balls[i]
+                            val b2 = balls[j]
+                            val dx = b2.x - b1.x
+                            val dy = b2.y - b1.y
+                            val distSq = dx * dx + dy * dy
+                            val minDist = b1.radius + b2.radius
+
+                            if (distSq < minDist * minDist) {
+                                val dist = sqrt(distSq)
+                                val currentDist = if (dist == 0f) 0.1f else dist
+                                val nx = dx / currentDist
+                                val ny = dy / currentDist
+                                val overlap = minDist - currentDist
+
+                                // Separate
+                                b1.x -= nx * overlap * 0.5f
+                                b1.y -= ny * overlap * 0.5f
+                                b2.x += nx * overlap * 0.5f
+                                b2.y += ny * overlap * 0.5f
+
+                                // Exchange Momentum
+                                val rvx = b2.vx - b1.vx
+                                val rvy = b2.vy - b1.vy
+                                val velAlongNormal = rvx * nx + rvy * ny
+
+                                if (velAlongNormal < 0) {
+                                    val restitution = 0.7f
+                                    val impulse = -(1 + restitution) * velAlongNormal
+                                    val impulseScale = impulse * 0.5f
+                                    b1.vx -= nx * impulseScale
+                                    b1.vy -= ny * impulseScale
+                                    b2.vx += nx * impulseScale
+                                    b2.vy += ny * impulseScale
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Final Clamp (Strict Overflow Protection)
+                // Even if physics pushes them out, this forces them back in.
+                balls.forEach { b ->
+                    b.x = b.x.coerceIn(b.radius, width - b.radius)
+                    b.y = b.y.coerceAtMost(height - b.radius)
                 }
 
                 trigger++
@@ -658,17 +724,13 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
         }
 
         Box(Modifier.fillMaxSize()) {
-            Text(
-                "My Tech Stack",
-                color = YellowAccent,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp)
-            )
-
+            // Close Button
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).padding(24.dp)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(24.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
@@ -678,31 +740,42 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
                 )
             }
 
+            // Draw Balls
             balls.forEach { b ->
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .offset((b.x - b.radius).dp, (b.y - b.radius).dp)
-                        .size((b.radius * 2).dp)
-                        .shadow(4.dp, CircleShape)
-                        .background(b.language.color, CircleShape)
-                        .clickable {
-                            b.vy = -800f
-                            b.vx = (Random.nextFloat() - 0.5f) * 500f
-                        }
-                ) {
-                    Text(
-                        b.language.name,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkGreen
-                    )
+                key(b.language.name, trigger) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            // Optimized rendering
+                            .graphicsLayer {
+                                translationX = (b.x - b.radius).dp.toPx()
+                                translationY = (b.y - b.radius).dp.toPx()
+                            }
+                            .size((b.radius * 2).dp)
+                            .shadow(6.dp, CircleShape)
+                            .background(b.language.color, CircleShape)
+                            .clickable {
+                                // Fun interaction: Kick the ball
+                                b.vy = -1200f
+                                b.vx = (Random.nextFloat() - 0.5f) * 1000f
+                            }
+                    ) {
+                        // Responsive Text Sizing
+                        val isDark = b.language.name in listOf("NumPy", "Next.js", "C", "Flask")
+                        Text(
+                            b.language.name,
+                            fontSize = (b.radius * 0.35f).sp, // Text scales with ball
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) PureWhite else Color(0xFF0F291E),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 // ----------------- Utils ------------------------
 fun Modifier.bounceClick() = composed {
     var pressed by remember { mutableStateOf(false) }

@@ -133,12 +133,12 @@ private fun calculateProgressFromOffset(offset: Offset, size: IntSize): Float {
 
 @Composable
 internal fun MusicPlayerControls(
-    isPlaying: Boolean = false,
+    modifier: Modifier = Modifier,
+            isPlaying: Boolean = false,
     isBuffering: Boolean = false,
     isShuffleEnabled: Boolean = false,
     repeatMode: TabViewModel.RepeatMode = TabViewModel.RepeatMode.OFF,
     onEvent: (PlayerEvent) -> Unit,
-    modifier: Modifier = Modifier
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceEvenly,

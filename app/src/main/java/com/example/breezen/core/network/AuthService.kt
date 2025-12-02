@@ -76,27 +76,26 @@ object AuthService {
         }
     }
 
-    // --- FIX: Use updateUser instead of modifyUser ---
-    suspend fun updateProfile(username: String?, email: String?) {
-        try {
-            // Replaced modifyUser with updateUser
-            client.auth.updateUser {
-                if (!email.isNullOrBlank()) {
-                    this.email = email
-                }
-                // Update metadata for username
-                if (!username.isNullOrBlank()) {
-                    this.data = buildJsonObject {
-                        put("username", username)
-                    }
-                }
-            }
-            Log.d("AuthService", "Profile updated successfully")
-        } catch (e: Exception) {
-            Log.e("AuthService", "Failed to update profile", e)
-            throw e
-        }
-    }
+//    suspend fun updateProfile(username: String?, email: String?) {
+//        try {
+//            // Replaced modifyUser with updateUser
+//            client.auth.updateUser {
+//                if (!email.isNullOrBlank()) {
+//                    this.email = email
+//                }
+//                // Update metadata for username
+//                if (!username.isNullOrBlank()) {
+//                    this.data = buildJsonObject {
+//                        put("username", username)
+//                    }
+//                }
+//            }
+//            Log.d("AuthService", "Profile updated successfully")
+//        } catch (e: Exception) {
+//            Log.e("AuthService", "Failed to update profile", e)
+//            throw e
+//        }
+//    }
 
     suspend fun logout() {
         try {

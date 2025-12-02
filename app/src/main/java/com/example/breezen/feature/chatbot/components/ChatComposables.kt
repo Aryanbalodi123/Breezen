@@ -1,14 +1,11 @@
 package com.example.breezen.feature.chatbot.components
 
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -23,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,92 +33,126 @@ import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.SelfImprovement
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.breezen.R
 import com.example.breezen.core.ui.components.BackButton
+import com.example.breezen.core.ui.theme.DMSansFontFamily
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import com.example.breezen.core.ui.theme.Prata
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
 
-// ... TopHeader remains unchanged ...
+// -----------------------------------------------------
+// PASTEL GREEN THEME COLORS
+// -----------------------------------------------------
+
+// -----------------------------
+// DARK GREEN PREMIUM PALETTE
+// -----------------------------
+
+// Deep forest background
+val APP_BACKGROUND = Color(0xFF0E1A16)           // very dark green-black
+
+// Primary accent (emerald green)
+private val APP_PRIMARY = Color(0xFF2E7D32)      // emerald / dark-green accent
+
+// Slightly brighter variant
+private val APP_PRIMARY_DARK = Color(0xFF43A047) // mid-emerald
+
+// Text on primary surfaces
+private val APP_ON_PRIMARY = Color.White
+
+// Soft warm white for all text on dark backgrounds
+private val APP_ON_SURFACE = Color(0xFFF1F8E9)   // mint-tinted off-white
+
+// Dark muted card surface
+private val APP_CARD = Color(0xFF1B2A22)         // dark desaturated green
+
+// Icon tint (cool mint)
+private val APP_ICON_TINT = Color(0xFFA5D6A7)    // mint pastel on dark
+
+// AI bubble translucent surface
+private val APP_SURFACE_TRANSLUCENT = Color(0xFF1B2A22).copy(alpha = 0.55f)
+
+
+// -----------------------------------------------------
+// TOP HEADER
+// -----------------------------------------------------
+
 @Composable
-internal fun TopHeader(onNewChatClicked: () -> Unit, navController: NavController) {
+internal fun TopHeader(
+    dailyCount: Int,
+    onNewChatClicked: () -> Unit,
+    navController: NavController
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Left button
         BackButton(navController)
 
-        // Center content
         Row(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.secondary,
-                                MaterialTheme.colorScheme.primary
-                            ),
-                            start = Offset(0f, 0f),
-                            end = Offset(100f, 100f)
-                        )
-                    )
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = APP_CARD.copy(alpha = 0.7f),
+                shadowElevation = 2.dp
             ) {
-                Text(
-                    "Zeni",
-                    color = MaterialTheme.colorScheme.onSecondary,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontFamily = FunnelDisplayFamily
-                )
-                Spacer(Modifier.width(6.dp))
-                Icon(
-                    painterResource(R.drawable.sparkles),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSecondary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Zeni",
+                        color = APP_ON_SURFACE,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontFamily = FunnelDisplayFamily,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Icon(
+                        painterResource(id = R.drawable.sparkles),
+                        contentDescription = null,
+                        tint = APP_ICON_TINT,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    val remaining = (5 - dailyCount).coerceAtLeast(0)
+                    Text(
+                        text = "$remaining left",
+                        color = APP_ON_SURFACE.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontFamily = FunnelDisplayFamily
+                    )
+                }
             }
         }
 
-        // Right button
         ActionButton(
             icon = Icons.Default.Add,
             contentDescription = "New Chat",
@@ -129,41 +161,40 @@ internal fun TopHeader(onNewChatClicked: () -> Unit, navController: NavControlle
     }
 }
 
+
+// -----------------------------------------------------
+// EMPTY STATE
+// -----------------------------------------------------
+
 @Composable
-internal fun EmptyStateLarge(
-    onSendPrompt: (String) -> Unit, // Callback to send text immediately
-    hazeState: HazeState
-) {
+internal fun EmptyStateLarge(onSendPrompt: (String) -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(40.dp))
+
         Text(
-            "Hey Emma,",
+            "Hey there,",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = APP_ON_SURFACE.copy(alpha = 0.75f),
             fontFamily = Prata
         )
 
-        Spacer(Modifier.height(180.dp))
+        Spacer(Modifier.height(40.dp))
+
         Text(
             "How are you feeling\nthis morning?",
             style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onBackground,
+            color = APP_ON_SURFACE,
             textAlign = TextAlign.Center,
             fontFamily = FunnelDisplayFamily
         )
-        Spacer(Modifier.height(40.dp))
 
         Spacer(Modifier.weight(1f))
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 100.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SuggestionButton(
@@ -171,20 +202,23 @@ internal fun EmptyStateLarge(
                 subtitle = "5-min breathing",
                 icon = Icons.Outlined.SelfImprovement,
                 modifier = Modifier.weight(1f),
-                onClick = { onSendPrompt("Guide me through a short 5-minute morning breathing exercise.") },
-                hazeState = hazeState
+                onClick = { onSendPrompt("Guide me through a short 5-minute morning breathing exercise.") }
             )
             SuggestionButton(
                 title = "Sleep Well",
                 subtitle = "Relaxation story",
                 icon = Icons.Outlined.Bedtime,
                 modifier = Modifier.weight(1f),
-                onClick = { onSendPrompt("Tell me a calming sleep story to help me relax.") },
-                hazeState = hazeState
+                onClick = { onSendPrompt("Tell me a calming sleep story to help me relax.") }
             )
         }
     }
 }
+
+
+// -----------------------------------------------------
+// SUGGESTION BUTTON
+// -----------------------------------------------------
 
 @Composable
 fun SuggestionButton(
@@ -192,50 +226,43 @@ fun SuggestionButton(
     subtitle: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    hazeState: HazeState
+    onClick: () -> Unit
 ) {
-    // Glass style - Darker tint as requested
-    val glassHazeStyle = HazeStyle(
-        blurRadius = 24.dp,
-        tint = HazeTint(Color.Black.copy(alpha = 0.55f)), // Increased opacity for darker look
-        noiseFactor = 0f
-    )
-
-    Box(
-        modifier = modifier
-            .height(160.dp) // Adjusted height to look good with 2 lines of text
-            .clip(RoundedCornerShape(32.dp))
-            .hazeEffect(state = hazeState, style = glassHazeStyle)
-            .background(Color.Black.copy(alpha = 0.2f))
-            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp)) // Subtle border
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(140.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = APP_CARD),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 icon,
                 null,
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(32.dp)
+                tint = APP_ICON_TINT,
+                modifier = Modifier.size(28.dp)
             )
-            Spacer(Modifier.height(16.dp))
+
+            Spacer(Modifier.height(12.dp))
+
             Text(
                 title,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White.copy(alpha = 0.95f),
+                color = APP_ON_SURFACE,
                 textAlign = TextAlign.Center,
                 fontFamily = Prata
             )
+
             Spacer(Modifier.height(4.dp))
+
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.7f),
+                color = APP_ON_SURFACE.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
                 fontFamily = FunnelDisplayFamily
             )
@@ -243,7 +270,11 @@ fun SuggestionButton(
     }
 }
 
-// ... Rest of the file (MessageBubble, etc.) remains unchanged ...
+
+// -----------------------------------------------------
+// MESSAGE BUBBLES
+// -----------------------------------------------------
+
 @Composable
 internal fun MessageBubble(
     message: String,
@@ -252,185 +283,146 @@ internal fun MessageBubble(
     onShare: (String) -> Unit,
     onRegenerate: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+
         if (sender == "AI") {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.AutoAwesome,
                     null,
-                    tint = MaterialTheme.colorScheme.primary, // Use theme
+                    tint = APP_PRIMARY_DARK,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "Zeni",
-                    color = MaterialTheme.colorScheme.primary, // Use theme
-                    style = MaterialTheme.typography.titleMedium, // Use theme
+                    color = APP_PRIMARY_DARK,
+                    style = MaterialTheme.typography.titleMedium,
                     fontFamily = FunnelDisplayFamily
                 )
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), // Use theme glass
-                        RoundedCornerShape(12.dp)
-                    )
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        RoundedCornerShape(12.dp)
-                    )
-                    .padding(14.dp)
+
+            Spacer(Modifier.height(4.dp))
+
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = APP_SURFACE_TRANSLUCENT,
+                shadowElevation = 0.dp,
+                modifier = Modifier.widthIn(max = 520.dp)
             ) {
-                Text(
-                    text = formatRichText(message),
-                    style = MaterialTheme.typography.bodyMedium, // Use theme
-                    color = MaterialTheme.colorScheme.onBackground, // Use theme
-                    fontFamily = Prata // Apply creative font
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            ActionButtonsRow(
-                onCopy = { onCopy(message) },
-                onShare = { onShare(message) },
-                onRegenerate = onRegenerate
-            )
-        } else { // User message
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.secondary, // Use theme
-                                    MaterialTheme.colorScheme.primary // Use theme
-                                )
-                            )
-                        )
-                        .padding(16.dp)
-                ) {
+                Box(modifier = Modifier.padding(14.dp)) {
                     Text(
                         message,
-                        color = MaterialTheme.colorScheme.onSecondary, // Use theme
-                        style = MaterialTheme.typography.bodyMedium, // Use theme
-                        fontFamily = Prata
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = APP_ON_SURFACE,
+                        fontFamily = DMSansFontFamily
                     )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+            ActionButtonsRow(onCopy = { onCopy(message) }, onShare = { onShare(message) }, onRegenerate)
+
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = APP_PRIMARY,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                ) {
+                    Box(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            message,
+                            color = APP_ON_PRIMARY,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = DMSansFontFamily
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-private fun formatRichText(text: String): AnnotatedString {
-    return buildAnnotatedString {
-        val pattern = Regex("(?<=\\s|^)(\\*\\*|\\*)([^*]+)(\\*\\*|\\*)(?=\\s|$)")
-        var lastIndex = 0
-        pattern.findAll(text).forEach { matchResult ->
-            val (delimiter, content) = matchResult.destructured
-            val startIndex = matchResult.range.first
-            val endIndex = matchResult.range.last
 
-            if (startIndex > lastIndex) {
-                append(text.substring(lastIndex, startIndex))
-            }
-            val style = if (delimiter == "**") SpanStyle(fontWeight = FontWeight.Bold)
-            else SpanStyle(fontStyle = FontStyle.Italic)
-            withStyle(style) {
-                append(content)
-            }
-            lastIndex = endIndex + 1
-        }
-        if (lastIndex < text.length) {
-            append(text.substring(lastIndex))
-        }
+// -----------------------------------------------------
+// ACTION BUTTONS
+// -----------------------------------------------------
+
+@Composable
+private fun ActionButtonsRow(
+    onCopy: () -> Unit,
+    onShare: () -> Unit,
+    onRegenerate: () -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ActionButton(Icons.Default.ThumbUp, "Like") {}
+        ActionButton(Icons.Default.ThumbDown, "Dislike") {}
+        ActionButton(Icons.Default.ContentCopy, "Copy", onCopy)
+        ActionButton(Icons.Default.Share, "Share", onShare)
+        ActionButton(Icons.Default.Refresh, "Regenerate", onRegenerate)
     }
 }
 
 @Composable
-private fun ActionButtonsRow(onCopy: () -> Unit, onShare: () -> Unit, onRegenerate: () -> Unit) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(vertical = 4.dp)
-    ) {
-        ActionButton(icon = Icons.Default.ThumbUp, contentDescription = "Like", onClick = {})
-        ActionButton(icon = Icons.Default.ThumbDown, contentDescription = "Dislike", onClick = {})
-        ActionButton(
-            icon = Icons.Default.ContentCopy, contentDescription = "Copy", onClick = onCopy
-        )
-        ActionButton(icon = Icons.Default.Share, contentDescription = "Share", onClick = onShare)
-        ActionButton(
-            icon = Icons.Default.Refresh, contentDescription = "Regenerate", onClick = onRegenerate
-        )
-    }
-}
-
-@Composable
-internal fun ActionButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
+internal fun ActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (isPressed) 0.9f else 1f, spring(), label = "")
+    val scale by animateFloatAsState(if (isPressed) 0.92f else 1f, spring())
 
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .scale(scale)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)) // Use theme surface
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.04f),
-                CircleShape
-            )
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = Modifier.scale(scale),
+        shape = CircleShape,
+        color = APP_CARD,
+        shadowElevation = 2.dp
     ) {
-        Icon(
-            icon,
-            contentDescription,
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f), // Use theme
-            modifier = Modifier.size(16.dp)
-        )
+        Box(
+            modifier = Modifier.size(36.dp)
+                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription, tint = APP_ICON_TINT, modifier = Modifier.size(16.dp))
+        }
     }
 }
+
+
+// -----------------------------------------------------
+// LOADING BUBBLE
+// -----------------------------------------------------
 
 @Composable
 internal fun LoadingBubble() {
-    val infiniteTransition = rememberInfiniteTransition(label = "")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing)),
-        label = ""
+    val infinite = rememberInfiniteTransition()
+    val rotation by infinite.animateFloat(
+        0f, 360f, infiniteRepeatable(tween(2000))
     )
-    Row(
-        modifier = Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically
-    ) {
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
-            Icons.Default.AutoAwesome,
-            null,
-            tint = MaterialTheme.colorScheme.primary, // Use theme
-            modifier = Modifier
-                .size(18.dp)
-                .rotate(rotation)
+            Icons.Default.AutoAwesome, null,
+            tint = APP_PRIMARY_DARK,
+            modifier = Modifier.size(18.dp).rotate(rotation)
         )
+
         Spacer(Modifier.width(12.dp))
+
         CircularProgressIndicator(
-            Modifier.size(18.dp), color = MaterialTheme.colorScheme.primary, strokeWidth = 2.dp
+            modifier = Modifier.size(16.dp),
+            color = APP_PRIMARY_DARK,
+            strokeWidth = 2.dp
         )
+
         Spacer(Modifier.width(12.dp))
+
         Text(
             "Thinking...",
-            color = MaterialTheme.colorScheme.onSurface, // Use theme
-            style = MaterialTheme.typography.bodyMedium, // Use theme
+            color = APP_ON_SURFACE,
+            style = MaterialTheme.typography.bodyMedium,
             fontFamily = Prata
         )
     }

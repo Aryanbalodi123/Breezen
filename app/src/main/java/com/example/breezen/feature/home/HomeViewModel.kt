@@ -23,8 +23,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadUser() {
         viewModelScope.launch {
-            // STEP 1: Fast Load from DataStore
-            // This runs instantly and fixes the "No session found" blank header
+
             val localName = UserPreferences.getUsername(getApplication()).firstOrNull()
             if (!localName.isNullOrEmpty()) {
                 _user.value = User(localName)

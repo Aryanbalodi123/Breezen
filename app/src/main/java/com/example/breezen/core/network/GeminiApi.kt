@@ -1,6 +1,5 @@
-package com.example.breezen.feature.chatbot.network
+package com.example.breezen.core.network
 
-import com.example.breezen.core.network.GEMINI_API_KEY
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request

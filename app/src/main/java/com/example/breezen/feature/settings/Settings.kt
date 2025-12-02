@@ -94,8 +94,12 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp)
-        ) {
+                .padding(
+                    start = 20.dp,
+                    top = 20.dp,
+                    end = 20.dp,
+                    bottom = 100.dp
+                )        ) {
             Spacer(Modifier.height(16.dp))
 
             // ============================================================
@@ -134,6 +138,15 @@ fun SettingsScreen(
             ) {
                 navController.navigate("settings_credits")
             }
+            Spacer(Modifier.height(12.dp))
+
+            PremiumSettingCard(
+                icon = Icons.Default.Info,
+                title = "About Developer",
+                subtitle = "Learn more about the developer"
+            ) {
+                navController.navigate("developer_page")
+            }
 
             Spacer(Modifier.height(48.dp))
 
@@ -142,7 +155,6 @@ fun SettingsScreen(
             // ============================================================
             LogoutButton { showLogoutModal = true }
 
-            Spacer(Modifier.height(60.dp))
         }
 
         // ============================================================

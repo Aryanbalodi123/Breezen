@@ -43,6 +43,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.breezen.core.data.OnboardingPreferences
 import com.example.breezen.core.ui.components.EnhancedBottomNavigation
 import com.example.breezen.core.ui.util.overshootEasing
+import com.example.breezen.feature.breathe.BreatheScreen
 import com.example.breezen.feature.chatbot.ChatBotScreen
 import com.example.breezen.feature.chatbot.ChatViewModel
 import com.example.breezen.feature.home.HomeContent
@@ -244,8 +245,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
 
             // --- Meditation ---
             composable("breathe") {
-//               BreatheScreen(navigationState.navController)
-                DeveloperProfileScreen(navigationState.navController , settingsViewModel)
+               BreatheScreen(navigationState.navController)
             }
 
             composable("guided_meditate") {
@@ -260,6 +260,10 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                     navController = navigationState.navController,
                     viewModel = meditationViewModel
                 )
+            }
+            composable("developer_page"){
+                DeveloperProfileScreen(navigationState.navController , settingsViewModel)
+
             }
 
             // --- Chatbot ---
