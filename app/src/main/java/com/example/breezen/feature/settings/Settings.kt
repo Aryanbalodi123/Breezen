@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.breezen.core.data.OnboardingPreferences
 import com.example.breezen.core.data.UserPreferences
 import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.AppWhite
@@ -55,10 +56,15 @@ import com.example.breezen.core.ui.theme.BrandGreen
 import com.example.breezen.core.ui.theme.BrandGreenBright
 import com.example.breezen.core.ui.theme.SystemStop
 import com.example.breezen.core.ui.theme.TextSecondary
+import com.example.breezen.feature.settings.components.LogoutModal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
+/**
+ * Main Settings screen displaying user profile, security options, and app information.
+ * Handles navigation to sub-screens and the logout process.
+ */
 @Composable
 fun SettingsScreen(
     navController: NavController,
@@ -94,28 +100,18 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(
-                    start = 20.dp,
-                    top = 20.dp,
-                    end = 20.dp,
-                    bottom = 100.dp
-                )        ) {
+                .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 100.dp)
+        ) {
             Spacer(Modifier.height(16.dp))
 
-            // ============================================================
-            //  PROFILE CARD - Premium Apple Style
-            // ============================================================
+            // Profile Overview
             PremiumProfileCard(username)
 
             Spacer(Modifier.height(36.dp))
 
-            // ============================================================
-            //  SECURITY SECTION
-            // ============================================================
+            // Security Settings
             SectionHeader("Security")
-
             Spacer(Modifier.height(12.dp))
-
             PremiumSettingCard(
                 icon = Icons.Default.Lock,
                 title = "Change Password",
@@ -124,42 +120,33 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(32.dp))
 
-            // ============================================================
-            //  ABOUT SECTION
-            // ============================================================
+            // Information Section
             SectionHeader("About")
-
             Spacer(Modifier.height(12.dp))
-
             PremiumSettingCard(
                 icon = Icons.Default.Info,
                 title = "Credits",
                 subtitle = "Music & assets attribution"
-            ) {
-                navController.navigate("settings_credits")
-            }
+            ) { navController.navigate("settings_credits") }
+
             Spacer(Modifier.height(12.dp))
 
             PremiumSettingCard(
                 icon = Icons.Default.Info,
                 title = "About Developer",
                 subtitle = "Learn more about the developer"
-            ) {
-                navController.navigate("developer_page")
-            }
+            ) { navController.navigate("developer_page") }
 
             Spacer(Modifier.height(48.dp))
 
-            // ============================================================
-            //  LOG OUT BUTTON
-            // ============================================================
+            // Logout Action
             LogoutButton { showLogoutModal = true }
-
         }
 
         // ============================================================
-        //  MODALS
+        //  MODALS & OVERLAYS
         // ============================================================
+
         ChangePasswordModal(
             visible = showPasswordModal,
             onDismissRequest = { showPasswordModal = false },
@@ -171,11 +158,12 @@ fun SettingsScreen(
             onDismissRequest = { showLogoutModal = false },
             onConfirm = {
                 showLogoutModal = false
+                // Handle logout logic: Clear prefs -> API call -> Navigate to login
                 scope.launch {
-                    UserPreferences.clearUser(context)
+                    UserPreferences.clearAll(context)
+                    OnboardingPreferences(context).setOnboardingCompleted(false)
                     viewModel.logout {
-                        successMessage = "Logged out successfully!"
-                        navController.navigate("login_screen") {
+                        navController.navigate("onboard") {
                             popUpTo(0) { inclusive = true }
                         }
                     }
@@ -183,9 +171,7 @@ fun SettingsScreen(
             }
         )
 
-        // ============================================================
-        //  SUCCESS TOAST
-        // ============================================================
+        // Floating success toast message
         successMessage?.let { msg ->
             LaunchedEffect(msg) {
                 delay(1500)
@@ -199,13 +185,12 @@ fun SettingsScreen(
     }
 }
 
-
-//////////////////////////////////////////////////////////////////
-//  PREMIUM PROFILE CARD
-//////////////////////////////////////////////////////////////////
-
+/**
+ * Displays user avatar, name, and a time-sensitive greeting (Morning/Afternoon/Evening).
+ */
 @Composable
 fun PremiumProfileCard(username: String?) {
+    // Determine greeting based on current hour
     val compliment = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when (hour) {
@@ -221,19 +206,13 @@ fun PremiumProfileCard(username: String?) {
             .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF1A1F1A),
-                        Color(0xFF0F140F)
-                    )
+                    listOf(Color(0xFF1A1F1A), Color(0xFF0F140F))
                 )
             )
             .border(
                 1.dp,
                 Brush.verticalGradient(
-                    listOf(
-                        BrandGreen.copy(alpha = 0.3f),
-                        Color.White.copy(alpha = 0.08f)
-                    )
+                    listOf(BrandGreen.copy(alpha = 0.3f), Color.White.copy(alpha = 0.08f))
                 ),
                 RoundedCornerShape(28.dp)
             )
@@ -243,37 +222,24 @@ fun PremiumProfileCard(username: String?) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Avatar with premium green glow
-            Box(
-                contentAlignment = Alignment.Center
-            ) {
-                // Glow effect
+            // Avatar Container with Glow Effect
+            Box(contentAlignment = Alignment.Center) {
                 Box(
                     modifier = Modifier
                         .size(120.dp)
                         .background(
                             Brush.radialGradient(
-                                listOf(
-                                    BrandGreen.copy(alpha = 0.4f),
-                                    Color.Transparent
-                                )
+                                listOf(BrandGreen.copy(alpha = 0.4f), Color.Transparent)
                             ),
                             CircleShape
                         )
                 )
-
-                // Avatar
                 Box(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
                         .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    BrandGreen,
-                                    BrandGreenBright
-                                )
-                            )
+                            Brush.linearGradient(listOf(BrandGreen, BrandGreenBright))
                         )
                         .border(3.dp, Color.Black.copy(alpha = 0.2f), CircleShape),
                     contentAlignment = Alignment.Center
@@ -314,11 +280,9 @@ fun PremiumProfileCard(username: String?) {
     }
 }
 
-
-//////////////////////////////////////////////////////////////////
-//  SECTION HEADER
-//////////////////////////////////////////////////////////////////
-
+/**
+ * Reusable section title with consistent styling and spacing.
+ */
 @Composable
 fun SectionHeader(title: String) {
     Text(
@@ -333,11 +297,9 @@ fun SectionHeader(title: String) {
     )
 }
 
-
-//////////////////////////////////////////////////////////////////
-//  PREMIUM SETTING CARD
-//////////////////////////////////////////////////////////////////
-
+/**
+ * A clickable list item card with an icon, title, subtitle, and press animation.
+ */
 @Composable
 fun PremiumSettingCard(
     icon: ImageVector,
@@ -358,10 +320,7 @@ fun PremiumSettingCard(
             .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF1A1F1A),
-                        Color(0xFF121712)
-                    )
+                    listOf(Color(0xFF1A1F1A), Color(0xFF121712))
                 )
             )
             .border(
@@ -375,6 +334,7 @@ fun PremiumSettingCard(
             }
             .padding(20.dp)
     ) {
+        // Reset press state after animation
         LaunchedEffect(pressed) {
             if (pressed) {
                 delay(100)
@@ -386,7 +346,7 @@ fun PremiumSettingCard(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Icon with green accent
+            // Icon container
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -420,14 +380,10 @@ fun PremiumSettingCard(
                     ),
                     color = AppWhite
                 )
-
                 Spacer(Modifier.height(4.dp))
-
                 Text(
                     subtitle,
-                    style = AppTypography.bodySmall.copy(
-                        fontSize = 14.sp
-                    ),
+                    style = AppTypography.bodySmall.copy(fontSize = 14.sp),
                     color = TextSecondary.copy(alpha = 0.7f)
                 )
             }
@@ -444,11 +400,9 @@ fun PremiumSettingCard(
     }
 }
 
-
-//////////////////////////////////////////////////////////////////
-//  LOGOUT BUTTON
-//////////////////////////////////////////////////////////////////
-
+/**
+ * Destructive action button styled with a reddish tint for the Logout action.
+ */
 @Composable
 fun LogoutButton(onClick: () -> Unit) {
     var pressed by remember { mutableStateOf(false) }
@@ -464,10 +418,7 @@ fun LogoutButton(onClick: () -> Unit) {
             .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF1F1414),
-                        Color(0xFF170F0F)
-                    )
+                    listOf(Color(0xFF1F1414), Color(0xFF170F0F))
                 )
             )
             .border(

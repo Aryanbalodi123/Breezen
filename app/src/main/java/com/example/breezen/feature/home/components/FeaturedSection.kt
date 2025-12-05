@@ -1,11 +1,11 @@
 package com.example.breezen.feature.home.components
 
-// --- THIS IS THE FIX ---
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,80 +44,81 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.breezen.R
+import com.example.breezen.core.ui.theme.AppBlack
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.CornerLarge
+import com.example.breezen.core.ui.theme.CornerSmall
+import com.example.breezen.core.ui.theme.CosmosBlackBlue
+import com.example.breezen.core.ui.theme.DeepTeal
+import com.example.breezen.core.ui.theme.IndigoNight
+import com.example.breezen.core.ui.theme.MidnightBlue
+import com.example.breezen.core.ui.theme.MistGreen
+import com.example.breezen.core.ui.theme.OceanGreen
+import com.example.breezen.core.ui.theme.SunriseYellow
+import com.example.breezen.core.ui.theme.TextPrimary
 import com.example.breezen.feature.meditation.MeditationViewModel
 import com.example.breezen.feature.meditation.model.GuidedMeditation
-import createGuidedMeditationData
-
-// --- END FIX ---
+import com.example.breezen.feature.meditation.model.createGuidedMeditationData
 
 @Composable
 fun FeaturedSection(
     navController: NavController,
-    isLoading: Boolean,
-    viewModel: MeditationViewModel,
+    viewModel: MeditationViewModel
 ) {
-
-    // Generate two different meditations immediately
     val meditation1 = remember { createGuidedMeditationData(viewModel, (0..7).random()) }
     val meditation2 = remember { createGuidedMeditationData(viewModel, (0..7).random()) }
 
     Column {
         Text(
             text = "Refreshing Tunes",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-            ),
-            modifier = Modifier.padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
+            style = AppTypography.headlineMedium.copy(color = TextPrimary),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         )
 
         LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
                 FeatureSectionCard1(
                     meditation = meditation1,
                     viewModel = viewModel,
-                    navController = navController,
-                    isLoading = isLoading
+                    navController = navController
                 )
             }
             item {
                 FeatureSectionCard2(
                     meditation = meditation2,
                     viewModel = viewModel,
-                    navController = navController,
-                    isLoading = isLoading
+                    navController = navController
                 )
             }
         }
     }
 }
 
+/* ---------------------------------------------
+   Featured Card 1
+--------------------------------------------- */
 
 @Composable
 fun FeatureSectionCard1(
     meditation: GuidedMeditation,
     viewModel: MeditationViewModel,
-    navController: NavController,
-    isLoading: Boolean
+    navController: NavController
 ) {
-
     Column(
         modifier = Modifier
             .height(350.dp)
             .width(250.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(CornerLarge))
             .background(
-                brush = Brush.linearGradient(
-                    listOf(Color(0xFF012f46), Color(0xFF00090e), Color.Black)
+                Brush.linearGradient(
+                    colors = listOf(DeepTeal, MidnightBlue, AppBlack)
                 )
             )
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize()) {
 
             Image(
                 painter = painterResource(R.drawable.gradient_circles),
@@ -135,31 +135,29 @@ fun FeatureSectionCard1(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-
                 Text(
                     text = "New",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = AppTypography.bodySmall.copy(
+                        color = TextPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    ),
                     modifier = Modifier
                         .background(
-                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                            RoundedCornerShape(16.dp)
+                            TextPrimary.copy(alpha = 0.20f),
+                            RoundedCornerShape(CornerSmall)
                         )
-                        .padding(10.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(Modifier.weight(1f))
 
-                // Two-line title FIX
                 AutoResizedSingleLineText(
                     text = meditation.title + " " + meditation.subtitle,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxFontSize = 26.sp,
-                    minFontSize = 14.sp,
+                    color = TextPrimary,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
                 IconButton(
                     onClick = {
@@ -178,14 +176,14 @@ fun FeatureSectionCard1(
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
-                                listOf(Color(0xFF012f46), Color(0xFF07a796))
+                                colors = listOf(DeepTeal, OceanGreen)
                             )
                         )
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.play),
-                        contentDescription = "Play",
-                        tint = MaterialTheme.colorScheme.background,
+                        contentDescription = null,
+                        tint = AppBlack,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -194,36 +192,36 @@ fun FeatureSectionCard1(
     }
 }
 
+/* ---------------------------------------------
+   Featured Card 2
+--------------------------------------------- */
+
 @Composable
 fun FeatureSectionCard2(
     meditation: GuidedMeditation,
     viewModel: MeditationViewModel,
-    navController: NavController,
-    isLoading: Boolean
+    navController: NavController
 ) {
-
     Column(
         modifier = Modifier
             .height(350.dp)
             .width(250.dp)
+            .clip(RoundedCornerShape(CornerLarge))
             .background(
-                brush = Brush.linearGradient(
-                    listOf(
-                        Color(0xFFdde46f),
-                        Color(0xFF68a095),
-                        Color(0xFF21366d),
-                        Color(0xFF111333)
+                Brush.linearGradient(
+                    colors = listOf(
+                        SunriseYellow,
+                        MistGreen,
+                        IndigoNight,
+                        CosmosBlackBlue
                     )
-                ),
-                shape = RoundedCornerShape(16.dp)
+                )
             )
     ) {
-
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize()) {
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy((-50).dp),
-                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxSize()
                     .wrapContentWidth(Alignment.End)
@@ -232,17 +230,23 @@ fun FeatureSectionCard2(
                 Image(
                     painter = painterResource(R.drawable.yellow_blue_gradient),
                     contentDescription = null,
-                    modifier = Modifier.size(100.dp).graphicsLayer(rotationY = 45f)
+                    modifier = Modifier
+                        .size(100.dp)
+                        .graphicsLayer(rotationY = 45f)
                 )
                 Image(
                     painter = painterResource(R.drawable.yellow_blue_gradient),
                     contentDescription = null,
-                    modifier = Modifier.size(120.dp).graphicsLayer(rotationY = 45f)
+                    modifier = Modifier
+                        .size(120.dp)
+                        .graphicsLayer(rotationY = 45f)
                 )
                 Image(
                     painter = painterResource(R.drawable.yellow_blue_gradient),
                     contentDescription = null,
-                    modifier = Modifier.size(190.dp).graphicsLayer(rotationY = 45f)
+                    modifier = Modifier
+                        .size(190.dp)
+                        .graphicsLayer(rotationY = 45f)
                 )
             }
 
@@ -251,31 +255,29 @@ fun FeatureSectionCard2(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-
                 Text(
                     text = "Trending",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = AppTypography.bodySmall.copy(
+                        color = TextPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    ),
                     modifier = Modifier
                         .background(
-                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                            RoundedCornerShape(16.dp)
+                            TextPrimary.copy(alpha = 0.20f),
+                            RoundedCornerShape(CornerSmall)
                         )
-                        .padding(10.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(Modifier.weight(1f))
 
-                // Two-line title fix
                 AutoResizedSingleLineText(
                     text = meditation.title + " " + meditation.subtitle,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxFontSize = 26.sp,
-                    minFontSize = 14.sp,
+                    color = TextPrimary,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
                 IconButton(
                     onClick = {
@@ -294,14 +296,14 @@ fun FeatureSectionCard2(
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
-                                listOf(Color(0xFF012f46), Color(0xFF07a796))
+                                listOf(DeepTeal, OceanGreen)
                             )
                         )
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.play),
-                        contentDescription = "Play",
-                        tint = MaterialTheme.colorScheme.background,
+                        contentDescription = null,
+                        tint = AppBlack,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -309,6 +311,11 @@ fun FeatureSectionCard2(
         }
     }
 }
+
+/* ---------------------------------------------
+   Dynamic text sizing for titles
+--------------------------------------------- */
+
 @Composable
 fun AutoResizedSingleLineText(
     text: String,
@@ -316,38 +323,30 @@ fun AutoResizedSingleLineText(
     modifier: Modifier = Modifier,
     maxFontSize: TextUnit = 26.sp,
     minFontSize: TextUnit = 14.sp,
-    fontWeight: FontWeight = FontWeight.Thin
+    fontWeight: FontWeight = FontWeight.SemiBold
 ) {
-    var currentTextSize by remember { mutableStateOf(maxFontSize) }
+    var currentSize by remember { mutableStateOf(maxFontSize) }
     val density = LocalDensity.current
 
-    Box(modifier = modifier) {
+    Box(modifier) {
         Text(
             text = text,
-            color = color,
             maxLines = 1,
-            softWrap = false,
             overflow = TextOverflow.Clip,
-            fontSize = currentTextSize,
+            color = color,
             fontWeight = fontWeight,
+            fontSize = currentSize,
             modifier = Modifier
                 .fillMaxWidth()
                 .onGloballyPositioned { coords ->
-
                     val containerWidth = coords.size.width.toFloat()
+                    val textPx = with(density) { currentSize.toPx() }
+                    val estimatedText = textPx * text.length * 0.55f
 
-                    // Convert sp -> px using density
-                    val fontPx = with(density) { currentTextSize.toPx() }
-
-                    // Approx width of characters
-                    val textWidth = fontPx * text.length * 0.55f
-
-                    // Shrink if needed
-                    if (textWidth > containerWidth && currentTextSize.value > minFontSize.value) {
-                        currentTextSize = (currentTextSize.value - 1).sp
+                    if (estimatedText > containerWidth && currentSize > minFontSize) {
+                        currentSize = (currentSize.value - 1).sp
                     }
                 }
         )
     }
 }
-

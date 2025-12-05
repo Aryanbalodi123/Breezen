@@ -9,18 +9,17 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-/**
- * In-memory LRU cache for mapping Telegram file_id -> stream URL
- * and simple disk cache for downloaded media files (cacheDir/music_cache).
- *
- * Simple, safe, and dependency-free. Use this for quick wins.
- */
+// ------- MUSIC CACHE MANAGER -------
+// ------- Handles stream URL cache + disk file caching -------
 object MusicCacheManager {
+
     // In-memory cache: file_id -> streamURL
     private val streamUrlCache = object : LruCache<String, String>(200) {}
 
     fun getCachedStreamUrl(fileId: String): String? = streamUrlCache.get(fileId)
-    fun putStreamUrl(fileId: String, url: String) = streamUrlCache.put(fileId, url)
+    fun putStreamUrl(fileId: String, url: String) {
+        streamUrlCache.put(fileId, url)
+    }
 
     private const val SUBDIR = "music_cache"
 
@@ -30,28 +29,19 @@ object MusicCacheManager {
         return dir
     }
 
-    /**
-     * Returns the File object for a cached filename (does not ensure it exists).
-     */
     fun getCachedFile(context: Context, fileName: String): File =
         File(cacheDir(context), fileName)
 
-    /**
-     * Downloads the given URL into cacheDir/music_cache/fileName if missing.
-     * Returns absolute path when successful, or null on failure.
-     *
-     * Implementation notes:
-     * - Downloads to a .tmp file first, then renames to final name.
-     * - network IO runs on Dispatchers.IO.
-     */
+    // ------- Important: Downloads file only if missing -------
+    // Uses temp file first → prevents corrupted partial files
     suspend fun downloadIfMissing(context: Context, url: String, fileName: String): String? {
         return withContext(Dispatchers.IO) {
             try {
                 val localFile = getCachedFile(context, fileName)
                 if (localFile.exists()) return@withContext localFile.absolutePath
 
-                // download to temp file first
                 val temp = File(localFile.parentFile, "$fileName.tmp")
+
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.connectTimeout = 15_000
                 connection.readTimeout = 30_000
@@ -64,12 +54,14 @@ object MusicCacheManager {
                 }
                 connection.disconnect()
 
-                // move temp -> final
+                // Rename temp → final safely
                 if (!temp.renameTo(localFile)) {
                     temp.copyTo(localFile, overwrite = true)
                     temp.delete()
                 }
+
                 localFile.absolutePath
+
             } catch (e: Exception) {
                 e.printStackTrace()
                 null

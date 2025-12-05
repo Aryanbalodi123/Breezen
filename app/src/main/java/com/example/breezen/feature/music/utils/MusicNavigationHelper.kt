@@ -2,29 +2,27 @@ package com.example.breezen.feature.music.utils
 
 import android.content.Context
 import androidx.navigation.NavController
-// --- THIS IS THE FIX ---
 import com.example.breezen.core.network.Song
-// --- END FIX ---
 import com.example.breezen.feature.music.TabViewModel
 
 /**
- * Modern helper function to play a song.
- *
- * 1. Immediately navigates to the "player" screen (for instant UI response).
- * 2. Tells the ViewModel to handle all caching, streaming, and pre-loading in the background.
+ * Coordinates the transition to the player screen.
+ * Initiates navigation for immediate UI feedback and delegates media preparation
+ * (caching, streaming setup) to the ViewModel.
  */
 fun playSongFromPlaylist(
     context: Context,
     viewModel: TabViewModel,
-    selectedSong: Song, // Type is now core.network.Song
-    playlist: List<Song>, // Type is now List<core.network.Song>
+    selectedSong: Song,
+    playlist: List<Song>,
     navController: NavController
 ) {
     if (playlist.isEmpty()) return
 
-    // 1. Navigate immediately so the user sees the loading screen.
+    // Trigger navigation immediately to minimize perceived latency for the user
     navController.navigate("player")
 
-    // 2. Tell the ViewModel to handle everything else (caching, streaming, etc.)
+    // Delegate media playback initialization and playlist management to the ViewModel
+    // This handles background buffering, audio focus, and session state
     viewModel.playSong(context, selectedSong, playlist)
 }

@@ -1,6 +1,5 @@
 package com.example.breezen.feature.home.components
 
-import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
@@ -14,13 +13,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,65 +30,75 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.breezen.R
+import com.example.breezen.core.ui.theme.AppBlack
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.AppWhite
+import com.example.breezen.core.ui.theme.BrandGreen
+import com.example.breezen.core.ui.theme.BrandGreenDarker
+import com.example.breezen.core.ui.theme.CornerLarge
 import com.example.breezen.core.ui.theme.DMSansFontFamily
+import com.example.breezen.core.ui.theme.FunnelDisplayFamily
+import com.example.breezen.core.ui.theme.TextPrimary
+import com.example.breezen.core.ui.theme.WhiteAlpha08
+import com.example.breezen.core.ui.theme.WhiteAlpha12
 import com.example.breezen.feature.chatbot.ChatViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
-@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun ChatBotSection(chatViewModel: ChatViewModel, navController: NavController) {
+fun ChatBotSection(
+    chatViewModel: ChatViewModel,
+    navController: NavController
+) {
 
     var input by remember { mutableStateOf("") }
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val keyboard = LocalSoftwareKeyboardController.current
+
     Box(
         modifier = Modifier
+            .padding(8.dp)
             .fillMaxWidth()
             .height(400.dp)
-            .background(MaterialTheme.colorScheme.background)
+            .clip(RoundedCornerShape(CornerLarge))       // Your corner shape
+            .background(AppBlack)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF3A9F8F).copy(alpha = 0.4f),
-                            Color.Transparent
-                        ), radius = 600f
-                    )
-                )
+
+        Image(
+            painter = painterResource(R.drawable.chatbot_component_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
         )
 
         Text(
             text = "How are you feeling today?",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
-            fontFamily = DMSansFontFamily, // Apply creative font
-            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimary.copy(alpha = 0.85f),
+            textAlign = TextAlign.Center,
+
+            style = AppTypography.displayLarge,
+            fontFamily = FunnelDisplayFamily,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 24.dp),
+                .padding(top = 26.dp)
         )
 
         Image(
             painter = painterResource(R.drawable.chatbot_background),
             contentDescription = null,
+            contentScale = ContentScale.Fit,
+            colorFilter = ColorFilter.tint(AppWhite.copy(alpha = 0.70f)),
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(150.dp),
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                .size(160.dp)
         )
 
         Row(
@@ -97,17 +106,12 @@ fun ChatBotSection(chatViewModel: ChatViewModel, navController: NavController) {
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(16.dp)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f))
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .clip(CircleShape)
+                .background(WhiteAlpha08)
+                .border(1.dp, WhiteAlpha12, CircleShape)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            var inputText by remember { mutableStateOf("") }
 
             BasicTextField(
                 value = input,
@@ -115,63 +119,59 @@ fun ChatBotSection(chatViewModel: ChatViewModel, navController: NavController) {
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 textStyle = LocalTextStyle.current.copy(
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Normal
+                    color = AppWhite,
+                    fontFamily = DMSansFontFamily
                 ),
-                cursorBrush = SolidColor(Color.White),
+                cursorBrush = SolidColor(AppWhite),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = {
-                    if (input.isNotBlank()) {
-                        chatViewModel.sendMessage(input.trim())
-                        input = ""
-                        keyboardController?.hide()
+                keyboardActions = KeyboardActions(
+                    onSend = {
+                        if (input.isNotBlank()) {
+                            chatViewModel.sendMessage(input.trim())
+                            input = ""
+                            keyboard?.hide()
+                            navController.navigate("chatbot")
+                        }
                     }
-
-                    navController.navigate("chatbot")
-                }),
-                decorationBox = { innerTextField ->
+                ),
+                decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (input.isEmpty()) {
                             Text(
-                                "Message Zeni...",
-                                style = LocalTextStyle.current.copy(
-                                    color = Color.White.copy(alpha = 0.48f),
-                                    fontSize = 15.sp
-                                )
+                                "Message Zeni…",
+                                color = AppWhite.copy(alpha = 0.45f),
+                                fontFamily = DMSansFontFamily
                             )
                         }
-                        innerTextField()
+                        inner()
                     }
                 }
             )
 
+            // ➤ Send Button
             IconButton(
                 onClick = {
-
                     if (input.isNotBlank()) {
-                        chatViewModel.sendMessage(input.trim())
+                        chatViewModel.sendMessage(input)
                         input = ""
-                        keyboardController?.hide()
+                        keyboard?.hide()
+                        navController.navigate("chatbot")
                     }
-
-                    navController.navigate("chatbot")
                 },
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(46.dp)
                     .clip(CircleShape)
-                    // This gradient is artistic and unique, so it stays
                     .background(
                         Brush.linearGradient(
-                            listOf(Color(0xFF3A9F8F), Color(0xFF66E6C9))
+                            listOf(BrandGreenDarker, BrandGreen)
                         )
                     )
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.play),
-                    modifier = Modifier.size(22.dp),
+                    painter = painterResource(R.drawable.play),
                     contentDescription = "Send",
-                    tint = MaterialTheme.colorScheme.background
+                    tint = AppBlack,
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }

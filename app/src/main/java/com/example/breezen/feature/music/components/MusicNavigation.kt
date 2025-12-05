@@ -52,12 +52,12 @@ import com.example.breezen.core.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 
-// ------------------------------------------------------------
-//                      TOP TAB ROW (UNCHANGED)
-// ------------------------------------------------------------
+
 @Composable
 internal fun TabButtonRow(
-    tabs: List<Tab>, selectedIndex: Int, onTabSelected: (Int) -> Unit
+    tabs: List<Tab>,
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -82,7 +82,9 @@ internal fun TabButtonRow(
 
 @Composable
 private fun TabItem(
-    title: String, isSelected: Boolean, onClick: () -> Unit
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
     val bg by animateColorAsState(
         targetValue = if (isSelected) BrandGreenBright.copy(alpha = 0.20f) else Color.Transparent,
@@ -116,13 +118,11 @@ private fun TabItem(
 }
 
 
-
-// ------------------------------------------------------------
-//                        CATEGORY ROW
-// ------------------------------------------------------------
 @Composable
 internal fun CategoryFilterChips(
-    categories: List<Category>, selectedIndex: Int, onCategorySelected: (Int) -> Unit
+    categories: List<Category>,
+    selectedIndex: Int,
+    onCategorySelected: (Int) -> Unit
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -133,7 +133,7 @@ internal fun CategoryFilterChips(
             count = categories.size,
             key = { index -> categories[index].name }
         ) { index ->
-            EnhancedCategoryFilterChip(
+            CategoryFilterChip(
                 text = categories[index].name,
                 isSelected = selectedIndex == index,
                 onClick = { onCategorySelected(index) }
@@ -143,12 +143,8 @@ internal fun CategoryFilterChips(
 }
 
 
-
-// ------------------------------------------------------------
-//   ⭐ MINIMAL CHIPS WITH COLORED UNDERLINE
-// ------------------------------------------------------------
 @Composable
-private fun EnhancedCategoryFilterChip(
+private fun CategoryFilterChip(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -163,7 +159,6 @@ private fun EnhancedCategoryFilterChip(
         )
     )
 
-    // Color palette from your theme
     val chipColors = listOf(
         BrandGreen,
         BrandGreenBright,
@@ -177,11 +172,6 @@ private fun EnhancedCategoryFilterChip(
     val accentColor = remember(text) {
         chipColors[(text.hashCode().absoluteValue) % chipColors.size]
     }
-
-    val bgAlpha by animateFloatAsState(
-        targetValue = if (isSelected) 0.12f else 0.05f,
-        animationSpec = tween(300)
-    )
 
     val underlineWidth by animateFloatAsState(
         targetValue = if (isSelected) 1f else 0f,
@@ -225,7 +215,6 @@ private fun EnhancedCategoryFilterChip(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Animated colored underline
         Box(
             modifier = Modifier
                 .width((text.length * 4).dp * underlineWidth)
@@ -238,7 +227,6 @@ private fun EnhancedCategoryFilterChip(
     LaunchedEffect(pressed) {
         if (pressed) {
             delay(100)
-            pressed = false
         }
     }
 }

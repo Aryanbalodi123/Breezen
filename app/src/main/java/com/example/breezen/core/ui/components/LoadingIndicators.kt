@@ -48,8 +48,11 @@ internal fun LoadingPillsIndicator(
                 targetValue = maxHeight.value,
                 animationSpec = infiniteRepeatable(
                     animation = tween(
-                        durationMillis = animationDuration, easing = FastOutSlowInEasing
-                    ), repeatMode = RepeatMode.Reverse, initialStartOffset = StartOffset(
+                        durationMillis = animationDuration,
+                        easing = FastOutSlowInEasing
+                    ),
+                    repeatMode = RepeatMode.Reverse,
+                    initialStartOffset = StartOffset(
                         offsetMillis = (animationDuration / pillCount) * index
                     )
                 ),
@@ -61,7 +64,8 @@ internal fun LoadingPillsIndicator(
                     .width(pillWidth)
                     .height(animatedHeight.dp)
                     .background(
-                        color = pillColor, shape = RoundedCornerShape(pillWidth / 2)
+                        color = pillColor,
+                        shape = RoundedCornerShape(pillWidth / 2)
                     )
                     .shadow(
                         elevation = 2.dp,

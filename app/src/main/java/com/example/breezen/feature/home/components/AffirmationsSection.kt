@@ -1,6 +1,5 @@
 package com.example.breezen.feature.home.components
 
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -28,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -36,44 +33,39 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.breezen.R
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.BlackAlpha20
+import com.example.breezen.core.ui.theme.CornerLarge
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
+import com.example.breezen.core.ui.theme.TextPrimary
+import com.example.breezen.core.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
 
 data class Affirmation(
     val id: Int,
     val text: String,
-    @DrawableRes val backgroundResId: Int
+    val backgroundResId: Int
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AffirmationSection() {
+
+    // Mutable list so cards disappear after swipe
     val affirmations = remember {
         mutableStateListOf(
             Affirmation(1, "I am capable of achieving my goals", R.drawable.affirmation_card_01),
-            Affirmation(
-                2,
-                "I choose to be happy and love myself today",
-                R.drawable.affirmation_card_02
-            ),
+            Affirmation(2, "I choose to be happy and love myself today", R.drawable.affirmation_card_02),
             Affirmation(3, "My potential to succeed is infinite", R.drawable.affirmation_card_03),
-            Affirmation(
-                4,
-                "I am resilient and can handle anything",
-                R.drawable.affirmation_card_04
-            ),
-            Affirmation(
-                5,
-                "I radiate positivity and attract good things",
-                R.drawable.affirmation_card_05
-            ),
+            Affirmation(4, "I am resilient and can handle anything", R.drawable.affirmation_card_04),
+            Affirmation(5, "I radiate positivity and attract good things", R.drawable.affirmation_card_05),
             Affirmation(6, "Today I choose joy and gratitude", R.drawable.affirmation_card_06),
             Affirmation(7, "I am worthy of love and respect", R.drawable.affirmation_card_07),
             Affirmation(8, "I trust in my journey and timing", R.drawable.affirmation_card_08)
@@ -88,16 +80,23 @@ fun AffirmationSection() {
                 .padding(horizontal = 8.dp),
             contentAlignment = Alignment.Center
         ) {
+
+            // When all cards are removed
             if (affirmations.isEmpty()) {
                 Text(
                     text = "You've gone through all affirmations for today!",
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = AppTypography.bodyLarge,
+                    color = TextSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
+
+                // Show only top 3 cards with depth stack animation
                 affirmations.forEachIndexed { index, affirmation ->
+
                     if (index >= affirmations.size - 3) {
+
                         val stackIndex = affirmations.size - 1 - index
                         val isTopCard = index == affirmations.size - 1
 
@@ -109,7 +108,7 @@ fun AffirmationSection() {
                                 .graphicsLayer {
                                     scaleX = 1f - (stackIndex * 0.04f)
                                     scaleY = 1f - (stackIndex * 0.04f)
-                                    alpha = 1f - (stackIndex * 0.2f)
+                                    alpha = 1f - (stackIndex * 0.20f)
                                 }
                                 .padding(horizontal = (stackIndex * 12).dp),
                             onSwipe = {
@@ -123,7 +122,6 @@ fun AffirmationSection() {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AffirmationCard(
@@ -132,6 +130,10 @@ fun AffirmationCard(
     modifier: Modifier = Modifier,
     onSwipe: () -> Unit
 ) {
+
+    // ------------------------------
+    // DRAG ANIMATION CONTROLLERS
+    // ------------------------------
     val coroutineScope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
     val offsetY = remember { Animatable(0f) }
@@ -139,8 +141,10 @@ fun AffirmationCard(
 
     val screenWidthPx =
         with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+
     val dismissThreshold = screenWidthPx * 0.4f
 
+    // If card is top one, enable drag/swipe gestures
     val cardModifier = if (isTopCard) {
         modifier.pointerInput(Unit) {
             detectDragGestures(
@@ -154,42 +158,37 @@ fun AffirmationCard(
                 },
                 onDragEnd = {
                     coroutineScope.launch {
+
                         val shouldDismiss = kotlin.math.abs(offsetX.value) > dismissThreshold
 
                         if (shouldDismiss) {
-                            val targetX =
-                                if (offsetX.value > 0) screenWidthPx * 1.5f else -screenWidthPx * 1.5f
+                            // Animate off-screen
+                            val targetX = if (offsetX.value > 0)
+                                screenWidthPx * 1.5f else -screenWidthPx * 1.5f
+
                             launch {
                                 offsetX.animateTo(
                                     targetValue = targetX,
-                                    animationSpec = tween(
-                                        durationMillis = 300,
-                                        easing = FastOutSlowInEasing
-                                    )
+                                    animationSpec = tween(300, easing = FastOutSlowInEasing)
                                 )
                             }
                             launch {
                                 offsetY.animateTo(
                                     targetValue = offsetY.value + 100f,
-                                    animationSpec = tween(
-                                        durationMillis = 300,
-                                        easing = FastOutSlowInEasing
-                                    )
+                                    animationSpec = tween(300, easing = FastOutSlowInEasing)
                                 )
                             }
                             launch {
                                 rotation.animateTo(
                                     targetValue = if (offsetX.value > 0) 30f else -30f,
-                                    animationSpec = tween(
-                                        durationMillis = 300,
-                                        easing = FastOutSlowInEasing
-                                    )
+                                    animationSpec = tween(300, easing = FastOutSlowInEasing)
                                 )
                             }
+
                             delay(300)
                             onSwipe()
                         } else {
-                            // Animate back to center
+                            // Animate back to original position
                             launch {
                                 offsetX.animateTo(
                                     targetValue = 0f,
@@ -200,79 +199,70 @@ fun AffirmationCard(
                                 )
                             }
                             launch {
-                                offsetY.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessLow
-                                    )
-                                )
+                                offsetY.animateTo(0f, animationSpec = spring())
                             }
                             launch {
-                                rotation.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessLow
-                                    )
-                                )
+                                rotation.animateTo(0f, animationSpec = spring())
                             }
                         }
                     }
                 }
             )
         }
-    } else {
-        modifier
-    }
+    } else modifier
 
+    // ------------------------------
+    // CARD UI
+    // ------------------------------
     Box(
         modifier = cardModifier
             .offset(
                 x = with(LocalDensity.current) { offsetX.value.toDp() },
                 y = with(LocalDensity.current) { offsetY.value.toDp() }
             )
-            .graphicsLayer {
-                rotationZ = rotation.value
-            }
+            .graphicsLayer { rotationZ = rotation.value }
             .height(240.dp)
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
-
             .shadow(
                 elevation = if (isTopCard) 12.dp else 4.dp,
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(CornerLarge)
             )
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(CornerLarge))
     ) {
+
+        // Background Image
         Image(
             painter = painterResource(id = affirmation.backgroundResId),
-            contentDescription = "Affirmation card background",
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
 
+        // Affirmation text
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = affirmation.text,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontFamily = FunnelDisplayFamily, // Apply creative font
-                fontSize = 26.sp,
+                color = TextPrimary,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.SemiBold,
-                lineHeight = 28.sp,
-                style = TextStyle(
+                modifier = Modifier.padding(horizontal = 40.dp, vertical = 24.dp),
+                style = AppTypography.headlineMedium.copy(
+                    fontSize = 26.sp,
+                    lineHeight = 28.sp,
+                    fontFamily = FunnelDisplayFamily,
+                    fontWeight = FontWeight.SemiBold,
                     shadow = Shadow(
-                        color = Color.Black.copy(alpha = 0.25f),
+                        color = BlackAlpha20,
                         offset = Offset(0f, 2f),
                         blurRadius = 4f
                     )
-                ),
-                modifier = Modifier.padding(horizontal = 40.dp, vertical = 24.dp)
+                )
             )
+
+
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,27 +47,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.breezen.R
 import com.example.breezen.core.data.UserPreferences
 import com.example.breezen.core.network.AuthService
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.AppWhite
 import com.example.breezen.core.ui.theme.BrandGreenDarker
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import com.example.breezen.core.ui.theme.Prata
 import com.example.breezen.core.ui.theme.SystemWarning
-import com.example.breezen.feature.onboarding.components.BreathingOrbBackground
-import com.example.breezen.feature.onboarding.components.QuoteProvider
 import kotlinx.coroutines.launch
 
-// Password strength logic
-private enum class PasswordStrength {
-    NONE, WEAK, MEDIUM, STRONG
-}
+// ----------------------------------------------------------
+// Password Strength Evaluation
+// ----------------------------------------------------------
+private enum class PasswordStrength { NONE, WEAK, MEDIUM, STRONG }
 
 private fun calculatePasswordStrength(password: String): PasswordStrength {
     if (password.isEmpty()) return PasswordStrength.NONE
@@ -75,6 +77,7 @@ private fun calculatePasswordStrength(password: String): PasswordStrength {
     if (password.any { it.isDigit() }) score++
     if (password.any { it.isUpperCase() }) score++
     if (password.any { it.isLowerCase() }) score++
+
     return when {
         score >= 4 -> PasswordStrength.STRONG
         score == 3 -> PasswordStrength.MEDIUM
@@ -82,75 +85,95 @@ private fun calculatePasswordStrength(password: String): PasswordStrength {
     }
 }
 
+// ----------------------------------------------------------
+// Sign Up Screen
+// ----------------------------------------------------------
 @Composable
 fun SignUpScreen(
     onSignInClick: () -> Unit,
     onSignUpSuccess: () -> Unit
 ) {
+
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-    val randomQuote = remember { QuoteProvider.getRandomQuote() }
     var passwordVisible by remember { mutableStateOf(false) }
     var visible by remember { mutableStateOf(false) }
 
-    val strength by remember {
-        derivedStateOf { calculatePasswordStrength(password) }
-    }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val strength by remember { derivedStateOf { calculatePasswordStrength(password) } }
 
     LaunchedEffect(Unit) {
         visible = true
     }
-    val context = LocalContext.current
 
+    // TextField Color Configuration
     val textFieldColors = TextFieldDefaults.colors(
         focusedContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
         unfocusedContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
         disabledContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+
         focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-        focusedLabelColor = MaterialTheme.colorScheme.primary,
-        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
         unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
         unfocusedLabelColor = MaterialTheme.colorScheme.onSurface,
+
+        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
         unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+
         focusedTextColor = MaterialTheme.colorScheme.onBackground,
         unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+
         cursorColor = MaterialTheme.colorScheme.onBackground,
         errorTextColor = MaterialTheme.colorScheme.error,
         errorCursorColor = MaterialTheme.colorScheme.error
     )
 
-    fun enterAnimation(delay: Int) = slideInVertically(
-        initialOffsetY = { it / 2 },
-        animationSpec = tween(durationMillis = 800, delayMillis = delay)
-    ) + fadeIn(animationSpec = tween(durationMillis = 800, delayMillis = delay))
+    fun enterAnimation(delay: Int) =
+        slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(800, delay)) +
+                fadeIn(tween(800, delay))
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Layer 1: The background
-        BreathingOrbBackground()
+    Box(Modifier.fillMaxSize()) {
 
-        // Layer 2: The UI content
+
+        Image(
+            painter = painterResource(R.drawable.login),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
 
-            Spacer(modifier = Modifier.weight(1f))
+
+            Image(
+                painter = painterResource(R.drawable.logo_without_background),
+                contentDescription = null,
+                modifier = Modifier.size(96.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(Modifier.height(32.dp))
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
                 AnimatedVisibility(visible = visible, enter = enterAnimation(0)) {
                     Text(
                         text = "Create Your Account",
                         color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp),
-                        fontFamily = FunnelDisplayFamily // Apply creative font
+                        fontFamily = FunnelDisplayFamily
                     )
                 }
 
@@ -159,80 +182,67 @@ fun SignUpScreen(
                         text = "Begin your journey to a calmer mind.",
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = Prata, // Apply creative font
+                        fontFamily = Prata,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(Modifier.height(48.dp))
 
+                // --------------------------
+                // Name Field
+                // --------------------------
                 AnimatedVisibility(visible = visible, enter = enterAnimation(200)) {
                     TextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Name") },
+                        label = { Text("Name", style = AppTypography.bodySmall.copy(fontFamily = FunnelDisplayFamily)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = textFieldColors,
                         singleLine = true,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Person,
-                                contentDescription = "Name Icon"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                         readOnly = isLoading
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
+                // --------------------------
+                // Email Field
+                // --------------------------
                 AnimatedVisibility(visible = visible, enter = enterAnimation(300)) {
                     TextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email") },
+                        label = { Text("Email" , style = AppTypography.bodySmall.copy(fontFamily = FunnelDisplayFamily)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = textFieldColors,
                         singleLine = true,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Email,
-                                contentDescription = "Email Icon"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                         readOnly = isLoading
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
+                // --------------------------
+                // Password Field
+                // --------------------------
                 AnimatedVisibility(visible = visible, enter = enterAnimation(400)) {
                     TextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Password") },
+                        label = { Text("Password" , style = AppTypography.bodySmall.copy(fontFamily = FunnelDisplayFamily)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = textFieldColors,
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = "Password Icon"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                         trailingIcon = {
-                            val image = if (passwordVisible)
-                                Icons.Outlined.Visibility
-                            else Icons.Outlined.VisibilityOff
-                            val description =
-                                if (passwordVisible) "Hide password" else "Show password"
-
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
-                                    imageVector = image,
-                                    description,
-                                    tint = MaterialTheme.colorScheme.onSurface
+                                    imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                                    contentDescription = null
                                 )
                             }
                         },
@@ -240,22 +250,25 @@ fun SignUpScreen(
                     )
                 }
 
-
-
+                // --------------------------
+                // Password Strength Bar
+                // --------------------------
                 AnimatedVisibility(visible = visible, enter = enterAnimation(450)) {
                     PasswordStrengthIndicator(
                         strength = strength,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp, start = 4.dp, end = 4.dp)
+                            .padding(top = 12.dp)
                     )
                 }
 
-
+                // --------------------------
+                // Error Message
+                // --------------------------
                 AnimatedVisibility(
                     visible = errorMessage != null,
-                    enter = fadeIn(animationSpec = tween(300)),
-                    exit = fadeOut(animationSpec = tween(300))
+                    enter = fadeIn(tween(300)),
+                    exit = fadeOut(tween(300))
                 ) {
                     errorMessage?.let {
                         Text(
@@ -267,8 +280,11 @@ fun SignUpScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(Modifier.height(32.dp))
 
+                // --------------------------
+                // Sign Up Button
+                // --------------------------
                 AnimatedVisibility(visible = visible, enter = enterAnimation(500)) {
                     Button(
                         onClick = {
@@ -277,10 +293,11 @@ fun SignUpScreen(
                                 errorMessage = null
                                 try {
                                     AuthService.signUp(name, email, password)
-                                    UserPreferences.saveUsername(context , name)
+                                    UserPreferences.saveUsername(context, name)
                                     onSignUpSuccess()
+
                                 } catch (e: Exception) {
-                                    errorMessage = e.message ?: "An unknown error occurred."
+                                    errorMessage = e.message ?: "Unknown error."
                                 } finally {
                                     isLoading = false
                                 }
@@ -292,84 +309,76 @@ fun SignUpScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = BrandGreenDarker),
                         enabled = !isLoading
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if (isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text(
-                                    text = "Sign Up",
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = AppWhite,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Sign Up",
+                                color = AppWhite,
+                                style = AppTypography.bodyMedium.copy(fontFamily = FunnelDisplayFamily)
+                            )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
 
+            // --------------------------
+            // Already Have Account Button (white text)
+            // --------------------------
             AnimatedVisibility(visible = visible, enter = enterAnimation(600)) {
                 OutlinedButton(
-                    onClick = { onSignInClick() },
+                    onClick = onSignInClick,
                     enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                    border = BorderStroke(1.dp, AppWhite)
                 ) {
                     Text(
                         text = "Already have an account? Sign In",
-                        color = MaterialTheme.colorScheme.primary,
+                        color = AppWhite,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
 
-            AnimatedVisibility(visible = visible, enter = enterAnimation(700)) {
-                Text(
-                    text = "\u201C${randomQuote}\u201D",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-                    fontFamily = Prata, // Apply creative font
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
+// ----------------------------------------------------------
+// Password Strength Indicator Bar
+// ----------------------------------------------------------
 @Composable
 private fun PasswordStrengthIndicator(
     strength: PasswordStrength,
     modifier: Modifier = Modifier
 ) {
-    // Use the colors from our theme palette
+
     val weakColor = MaterialTheme.colorScheme.error
     val mediumColor = SystemWarning
     val strongColor = MaterialTheme.colorScheme.primary
     val defaultColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
 
-    val bar1Color by animateColorAsState(
-        targetValue = if (strength != PasswordStrength.NONE) weakColor else defaultColor,
-        animationSpec = tween(300), label = "bar1"
+    val bar1 by animateColorAsState(
+        if (strength != PasswordStrength.NONE) weakColor else defaultColor,
+        tween(300)
     )
-    val bar2Color by animateColorAsState(
-        targetValue = if (strength == PasswordStrength.MEDIUM || strength == PasswordStrength.STRONG) mediumColor else defaultColor,
-        animationSpec = tween(300), label = "bar2"
+    val bar2 by animateColorAsState(
+        if (strength == PasswordStrength.MEDIUM || strength == PasswordStrength.STRONG) mediumColor else defaultColor,
+        tween(300)
     )
-    val bar3Color by animateColorAsState(
-        targetValue = if (strength == PasswordStrength.STRONG) strongColor else defaultColor,
-        animationSpec = tween(300), label = "bar3"
+    val bar3 by animateColorAsState(
+        if (strength == PasswordStrength.STRONG) strongColor else defaultColor,
+        tween(300)
     )
 
     Row(
@@ -377,25 +386,25 @@ private fun PasswordStrengthIndicator(
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Box(
-            modifier = Modifier
+            Modifier
                 .weight(1f)
                 .fillMaxSize()
                 .clip(RoundedCornerShape(2.dp))
-                .background(bar1Color)
+                .background(bar1)
         )
         Box(
-            modifier = Modifier
-                .weight(1F)
+            Modifier
+                .weight(1f)
                 .fillMaxSize()
                 .clip(RoundedCornerShape(2.dp))
-                .background(bar2Color)
+                .background(bar2)
         )
         Box(
-            modifier = Modifier
-                .weight(1F)
+            Modifier
+                .weight(1f)
                 .fillMaxSize()
                 .clip(RoundedCornerShape(2.dp))
-                .background(bar3Color)
+                .background(bar3)
         )
     }
 }

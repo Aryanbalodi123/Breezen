@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -39,20 +41,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.breezen.R
 import com.example.breezen.core.data.UserPreferences
 import com.example.breezen.core.network.AuthService
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.AppWhite
 import com.example.breezen.core.ui.theme.BrandGreenDarker
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
-import com.example.breezen.core.ui.theme.Prata
-import com.example.breezen.feature.onboarding.components.BreathingOrbBackground
-import com.example.breezen.feature.onboarding.components.QuoteProvider
+import com.example.breezen.core.ui.theme.SystemError
+import com.example.breezen.core.ui.theme.TextPrimary
+import com.example.breezen.core.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,140 +64,137 @@ fun SignInScreen(
     onSignUpClick: () -> Unit,
     onSignInSuccess: () -> Unit
 ) {
+
+    // ---- UI State ----
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-    val randomQuote = remember { QuoteProvider.getRandomQuote() }
     var passwordVisible by remember { mutableStateOf(false) }
     var visible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        visible = true
-    }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    // Trigger entrance animations
+    LaunchedEffect(Unit) { visible = true }
+
+    // ---- Field Colors (unchanged logic) ----
     val textFieldColors = TextFieldDefaults.colors(
         focusedContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
         unfocusedContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
         disabledContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+
         focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-        focusedLabelColor = MaterialTheme.colorScheme.primary,
-        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
         unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
         unfocusedLabelColor = MaterialTheme.colorScheme.onSurface,
+
+        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
         unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
-        focusedTextColor = MaterialTheme.colorScheme.onBackground,
-        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-        cursorColor = MaterialTheme.colorScheme.onBackground,
-        errorTextColor = MaterialTheme.colorScheme.error,
-        errorCursorColor = MaterialTheme.colorScheme.error
+
+        focusedTextColor = TextPrimary,
+        unfocusedTextColor = TextPrimary,
+
+        cursorColor = TextPrimary,
+        errorTextColor = SystemError,
+        errorCursorColor = SystemError
     )
 
-    // Animation specs
-    val enterAnimationBottom = slideInVertically(
-        initialOffsetY = { it / 2 },
-        animationSpec = tween(durationMillis = 700, delayMillis = 100)
-    ) + fadeIn(animationSpec = tween(durationMillis = 700, delayMillis = 100))
+    // ---- Animation Specs ----
+    val enterBottom = slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(700)) +
+            fadeIn(tween(700))
+    val enterLeft = slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(700)) +
+            fadeIn(tween(700))
+    val enterRight = slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(700)) +
+            fadeIn(tween(700))
+    val enterFade = fadeIn(tween(800))
 
-    val enterAnimationLeft = slideInHorizontally(
-        initialOffsetX = { -it },
-        animationSpec = tween(durationMillis = 700, delayMillis = 100)
-    ) + fadeIn(animationSpec = tween(durationMillis = 700, delayMillis = 100))
+    Box(Modifier.fillMaxSize()) {
 
-    val enterAnimationRight = slideInHorizontally(
-        initialOffsetX = { it },
-        animationSpec = tween(durationMillis = 700, delayMillis = 100)
-    ) + fadeIn(animationSpec = tween(durationMillis = 700, delayMillis = 100))
+        Image(
+            painter = painterResource(R.drawable.login),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
-    val enterAnimationFade = fadeIn(animationSpec = tween(durationMillis = 800))
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Layer 1: The background
-        BreathingOrbBackground()
-
-        // Layer 2: The UI content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
 
-            Spacer(modifier = Modifier.weight(1f))
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                AnimatedVisibility(visible = visible, enter = enterAnimationFade) {
+
+                Image(
+                    painter = painterResource(R.drawable.logo_without_background),
+                    contentDescription = null,
+                    modifier = Modifier.size(96.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(Modifier.height(32.dp))
+
+                AnimatedVisibility(visible = visible, enter = enterFade) {
                     Text(
                         text = "Welcome Back",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp),
-                        fontFamily = FunnelDisplayFamily // Apply creative font
+                        color = TextPrimary,
+                        style = AppTypography.displayLarge,
+                        fontFamily = FunnelDisplayFamily
                     )
                 }
 
-                AnimatedVisibility(visible = visible, enter = enterAnimationFade) {
+                AnimatedVisibility(visible = visible, enter = enterFade) {
                     Text(
                         text = "Enter your details to continue your journey.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = Prata, // Apply creative font
-                        modifier = Modifier.padding(top = 8.dp)
+                        color = TextSecondary,
+                        style = AppTypography.bodyMedium,
+                        fontFamily = FunnelDisplayFamily
                     )
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(Modifier.height(48.dp))
 
-                AnimatedVisibility(visible = visible, enter = enterAnimationLeft) {
+                // ---- Email Field ----
+                AnimatedVisibility(visible = visible, enter = enterLeft) {
                     TextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email") },
+                        label = { Text("Email", style = AppTypography.bodySmall.copy(fontFamily = FunnelDisplayFamily)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = textFieldColors,
                         singleLine = true,
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Email,
-                                contentDescription = "Email Icon"
-                            )
+                            Icon(Icons.Outlined.Email, contentDescription = null)
                         },
                         readOnly = isLoading
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-                AnimatedVisibility(visible = visible, enter = enterAnimationRight) {
+                // ---- Password Field ----
+                AnimatedVisibility(visible = visible, enter = enterRight) {
                     TextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Password") },
+                        label = { Text("Password", style = AppTypography.bodySmall.copy(fontFamily = FunnelDisplayFamily)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = textFieldColors,
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = "Password Icon"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                         trailingIcon = {
-                            val image = if (passwordVisible)
-                                Icons.Outlined.Visibility
-                            else Icons.Outlined.VisibilityOff
-                            val description =
-                                if (passwordVisible) "Hide password" else "Show password"
-
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
-                                    imageVector = image,
-                                    description,
-                                    tint = MaterialTheme.colorScheme.onSurface
+                                    imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = TextPrimary
                                 )
                             }
                         },
@@ -201,102 +202,95 @@ fun SignInScreen(
                     )
                 }
 
+                // ---- Error Message ----
                 AnimatedVisibility(
                     visible = errorMessage != null,
-                    enter = fadeIn(animationSpec = tween(300)),
-                    exit = fadeOut(animationSpec = tween(300))
+                    enter = fadeIn(tween(300)),
+                    exit = fadeOut(tween(300))
                 ) {
                     errorMessage?.let {
                         Text(
                             text = it,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
+                            color = SystemError,
+                            style = AppTypography.bodySmall,
                             modifier = Modifier.padding(top = 16.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(Modifier.height(32.dp))
 
-                AnimatedVisibility(visible = visible, enter = enterAnimationBottom) {
+                // ---- Sign In Button ----
+                AnimatedVisibility(visible = visible, enter = enterBottom) {
                     Button(
                         onClick = {
                             scope.launch {
                                 isLoading = true
                                 errorMessage = null
+
                                 try {
                                     AuthService.signIn(email, password)
-
                                     val user = AuthService.getCurrentUser()
-                                    user?.username?.let { fetchedName ->
-                                        UserPreferences.saveUsername(context, fetchedName)
+
+                                    user?.username?.let { saved ->
+                                        UserPreferences.saveUsername(context, saved)
                                     }
 
                                     onSignInSuccess()
+
                                 } catch (e: Exception) {
-                                    errorMessage = e.message ?: "An unknown error occurred."
+                                    errorMessage = e.message ?: "Something went wrong."
                                 } finally {
                                     isLoading = false
                                 }
                             }
                         },
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandGreenDarker),
-                        enabled = !isLoading
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandGreenDarker)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if (isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text(
-                                    text = "Sign In",
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = TextPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Sign In",
+                                color = TextPrimary,
+                                style = AppTypography.bodyLarge.copy(fontFamily = FunnelDisplayFamily)
+                            )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
 
-            AnimatedVisibility(visible = visible, enter = enterAnimationBottom) {
+            AnimatedVisibility(visible = visible, enter = enterBottom) {
                 OutlinedButton(
-                    onClick = { onSignUpClick() },
+                    onClick = onSignUpClick,
                     enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                    border = BorderStroke(1.dp, AppWhite)
                 ) {
                     Text(
                         text = "Don't have an account? Sign Up",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyMedium
+                        color = TextPrimary,
+                        style = AppTypography.bodyMedium.copy(fontFamily = FunnelDisplayFamily)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
 
-            AnimatedVisibility(visible = visible, enter = enterAnimationFade) {
-                Text(
-                    text = "\u201C${randomQuote}\u201D",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+
         }
     }
 }

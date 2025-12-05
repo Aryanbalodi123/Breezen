@@ -7,14 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -22,18 +21,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.breezen.core.network.Category
 import com.example.breezen.core.network.Song
 import com.example.breezen.core.network.Tab
-import com.example.breezen.core.ui.components.BackButton
 import com.example.breezen.core.ui.components.EmptyStateMessage
 import com.example.breezen.core.ui.components.LoadingPillsIndicator
+import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.feature.music.components.CategoryFilterChips
 import com.example.breezen.feature.music.components.MusicItemsGrid
+import com.example.breezen.feature.music.components.MusicScreenHeader
 import com.example.breezen.feature.music.components.TabButtonRow
 
 @Composable
@@ -41,12 +39,16 @@ fun MusicScreen(
     viewModel: TabViewModel,
     navController: NavController,
 ) {
+    // Data observation
     val tabs: List<Tab> by viewModel.tabs
     val categories: Map<String, List<Category>> by viewModel.categories
     val songs: Map<String, List<Song>> by viewModel.songs
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
-    var selectedCategoryIndex by rememberSaveable { mutableStateOf(0) }
 
+    // UI State management
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
+
+    // Derived state for current view context
     val currentTab = if (tabs.isNotEmpty()) tabs.getOrNull(selectedTabIndex) ?: tabs.first() else null
     val currentCategories: List<Category>? = categories[currentTab?.id]
     val isLoading = tabs.isEmpty()
@@ -54,13 +56,15 @@ fun MusicScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
     ) {
+        // Ambient background effect
         AuroraBackground(modifier = Modifier.matchParentSize())
 
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -73,7 +77,11 @@ fun MusicScreen(
                         minHeight = 8.dp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Loading music...", color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        text = "Loading music...",
+                        style = AppTypography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         } else {
@@ -82,36 +90,40 @@ fun MusicScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                // --- HEADER FIX: Inline implementation with Back button strictly on Left ---
-                CustomMusicHeader(navController)
+                // Custom header with navigation
+                MusicScreenHeader(navController)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Primary navigation: Tabs
                 TabButtonRow(
-                    tabs = tabs, selectedIndex = selectedTabIndex, onTabSelected = {
+                    tabs = tabs,
+                    selectedIndex = selectedTabIndex,
+                    onTabSelected = {
                         selectedTabIndex = it
-                        selectedCategoryIndex = 0
-                    })
+                        selectedCategoryIndex = 0 // Reset sub-navigation on tab switch
+                    }
+                )
 
+                // Secondary navigation: Categories
                 if (!currentCategories.isNullOrEmpty()) {
                     CategoryFilterChips(
                         categories = currentCategories,
                         selectedIndex = selectedCategoryIndex,
                         onCategorySelected = {
                             selectedCategoryIndex = it
-                        })
+                        }
+                    )
 
-                    // --- SPACING FIX: Reduced from 24.dp to 12.dp ---
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val categoryId = currentCategories.getOrNull(selectedCategoryIndex)?.id
+                    // Resolve current category ID for data lookup
+                    val category_id = currentCategories.getOrNull(selectedCategoryIndex)?.id
 
-                    // Filter out errors client side just in case
-                    val songsForCategory: List<Song>? = songs[categoryId]?.filter { !it.got_error }
+                    // Retrieve songs and filter invalid entries
+                    val songsForCategory: List<Song>? = songs[category_id]?.filter { !it.got_error }
 
                     if (!songsForCategory.isNullOrEmpty()) {
-                        // The Grid logic in MusicGrid.kt handles the "Sequential Loading"
-                        // and implicit scroll reset via LaunchedEffect(items)
                         MusicItemsGrid(
                             items = songsForCategory,
                             viewModel = viewModel,
@@ -121,7 +133,7 @@ fun MusicScreen(
                         EmptyStateMessage("No songs in this category.")
                     }
 
-                } else if (!isLoading) {
+                } else {
                     EmptyStateMessage("No categories found.")
                 }
             }
@@ -129,38 +141,18 @@ fun MusicScreen(
     }
 }
 
-// --- CUSTOM HEADER COMPONENT ---
-@Composable
-private fun CustomMusicHeader(
-    navController: NavController,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-    ) {
-        // Left: Back button
-        BackButton(navController = navController)
-
-        // Center: Title
-        Text(
-            text =" Music Library",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.align(Alignment.Center)
-        )
-    }
-}
-
-
-// --- Aurora Background (Unchanged) ---
+/**
+ * Renders a custom ambient background with radial gradients.
+ */
 @Composable
 private fun AuroraBackground(modifier: Modifier = Modifier) {
     val glowSoft = Color(0xFFB9FFE8)
     val glowDeep = Color(0xFF6EF2C5)
+
     Canvas(modifier = modifier) {
         drawRect(color = Color.Black)
+
+        // Upper-left soft glow
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(glowSoft.copy(alpha = 0.12f), Color.Transparent),
@@ -170,6 +162,8 @@ private fun AuroraBackground(modifier: Modifier = Modifier) {
             radius = size.width * 1.2f,
             center = Offset(size.width * -0.3f, size.height * -0.2f)
         )
+
+        // Lower-right accent glow
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(glowDeep.copy(alpha = 0.10f), Color.Transparent),

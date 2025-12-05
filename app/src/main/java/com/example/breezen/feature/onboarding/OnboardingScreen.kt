@@ -49,14 +49,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.AppWhite
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import com.example.breezen.core.ui.theme.Prata
+import com.example.breezen.core.ui.theme.SolidBlack
+import com.example.breezen.core.ui.theme.TextPrimary
 import com.example.breezen.feature.onboarding.components.GalaxyAnimation
 import com.example.breezen.feature.onboarding.components.createOrbitShapes
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-// --- Enums and Data Classes ---
 
 enum class OnboardingState { WELCOME, SIGN_UP, SIGN_IN }
 
@@ -74,14 +77,12 @@ fun OnboardingScreen(
     val revealRadius = remember { Animatable(0f) }
     var hasRevealed by remember { mutableStateOf(false) }
 
-    // Get theme colors
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val buttonColor = MaterialTheme.colorScheme.secondary
+
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor)
+            .background(SolidBlack)
     ) {
 
         val density = LocalDensity.current
@@ -149,23 +150,22 @@ fun OnboardingScreen(
             )
         }
 
-        // 5. The reveal "flash" circle
+        //  The reveal "flash" circle
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
-                color = buttonColor,
+                color = AppWhite,
                 radius = revealRadius.value,
                 center = Offset(x = size.width / 2f, y = size.height - 100.dp.toPx())
             )
         }
 
-        // 6. The animation driver
+        //  The animation driver
         LaunchedEffect(state) {
             if (state != OnboardingState.WELCOME && !hasRevealed) {
-                hasRevealed = true
                 val widthInPx = with(density) { maxWidth.toPx() }
                 val heightInPx = with(density) { maxHeight.toPx() }
 
-                val maxRadius = (sqrt(widthInPx.pow(2) + heightInPx.pow(2)) * 1.2f).toFloat()
+                val maxRadius = (sqrt(widthInPx.pow(2) + heightInPx.pow(2)) * 1.2f)
 
                 revealRadius.animateTo(
                     targetValue = maxRadius,
@@ -194,9 +194,9 @@ private fun WelcomeContent(onGetStartedClick: () -> Unit) {
     ) {
         Text(
             text = "Welcome to Breezen",
-            color = MaterialTheme.colorScheme.onBackground,
+            color = AppWhite,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.displayLarge,
+            style = AppTypography.displayLarge,
             fontFamily = FunnelDisplayFamily // Apply creative font
         )
 
@@ -204,10 +204,10 @@ private fun WelcomeContent(onGetStartedClick: () -> Unit) {
 
         Text(
             text = "Find your calm. Start your journey to mindfulness.",
-            color = MaterialTheme.colorScheme.onSurface,
+            color = AppWhite,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.bodyMedium,
+            style =AppTypography.bodyMedium,
             fontFamily = Prata // Apply creative font
         )
 
@@ -253,7 +253,7 @@ private fun WelcomeContent(onGetStartedClick: () -> Unit) {
             ) {
                 Text(
                     text = "Continue Journey",
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = TextPrimary,
                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
                     maxLines = 1
                 )

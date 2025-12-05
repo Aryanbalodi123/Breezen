@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -55,7 +54,11 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.breezen.core.network.IMAGE_BUCKET_URL
 import com.example.breezen.core.network.Song
-import com.example.breezen.core.ui.theme.DMSansFontFamily
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.AppWhite
+import com.example.breezen.core.ui.theme.SolidBlack
+import com.example.breezen.core.ui.theme.TextPrimary
+import com.example.breezen.core.ui.theme.TextSecondary
 import com.example.breezen.feature.music.TabViewModel
 import com.example.breezen.feature.music.utils.playSongFromPlaylist
 import kotlinx.coroutines.launch
@@ -68,54 +71,48 @@ internal fun MusicItemsGrid(
 ) {
     val context = LocalContext.current
 
-    // --- CACHED SEQUENTIAL LOADING ---
+    // Sequential preloading of images
     val readyItems = remember { mutableStateListOf<Song>() }
 
     LaunchedEffect(items) {
         readyItems.clear()
-        val loadedIds = mutableSetOf<String>()
+        val loaded = mutableSetOf<String>()
 
         items.forEach { song ->
             launch {
-                val imageUrl = IMAGE_BUCKET_URL + song.id + ".webp"
-                val request = ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .memoryCacheKey(imageUrl) // 1. Use Memory Cache Key
-                    .listener(
-                        onSuccess = { _, _ ->
-                            if (!loadedIds.contains(song.id)) {
-                                loadedIds.add(song.id)
-                                readyItems.add(song)
-                            }
-                        }
-                    )
+                val url = IMAGE_BUCKET_URL + song.id + ".webp"
+                val req = ImageRequest.Builder(context)
+                    .data(url)
+                    .memoryCacheKey(url)
+                    .listener(onSuccess = { _, _ ->
+                        if (loaded.add(song.id)) readyItems.add(song)
+                    })
                     .build()
-                // 2. Pre-fetch into cache
-                context.imageLoader.execute(request)
+
+                context.imageLoader.execute(req)
             }
         }
     }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize()
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(
             items = readyItems,
             key = { it.id }
-        ) { musicItem ->
-            // 3. Animate layout changes smoothly
+        ) { item ->
             Box(modifier = Modifier.animateItem()) {
                 MusicItemCard(
+                    musicItem = item,
                     viewModel = viewModel,
-                    musicItem = musicItem,
                     onClick = {
                         playSongFromPlaylist(
                             context = context,
                             viewModel = viewModel,
-                            selectedSong = musicItem,
+                            selectedSong = item,
                             playlist = items,
                             navController = navController
                         )
@@ -132,51 +129,50 @@ internal fun MusicItemCard(
     onClick: () -> Unit,
     viewModel: TabViewModel
 ) {
-    var dominantColor by remember { mutableStateOf(Color(0xFF444444)) }
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val onBackgroundColor = MaterialTheme.colorScheme.onBackground
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    var dominant by remember { mutableStateOf(SolidBlack.copy(alpha = 0.6f)) }
 
-    // Optimized Color Calculation
-    val vinylLight by remember(dominantColor) { derivedStateOf { dominantColor.copy(alpha = 0.7f) } }
-    val vinylDarker by remember(dominantColor) {
+    // Derived palette shades
+    val vinylLight by remember(dominant) { derivedStateOf { dominant.copy(alpha = 0.7f) } }
+    val vinylDark by remember(dominant) {
         derivedStateOf {
-            dominantColor.copy(
-                red = dominantColor.red * 0.7f,
-                green = dominantColor.green * 0.7f,
-                blue = dominantColor.blue * 0.7f
+            dominant.copy(
+                red = dominant.red * 0.7f,
+                green = dominant.green * 0.7f,
+                blue = dominant.blue * 0.7f
             )
         }
     }
 
-    // Animation State
-    val visibleState = remember {
+    // Entry animation
+    val visible = remember {
         MutableTransitionState(false).apply { targetState = true }
     }
 
+    // Extract color palette
     LaunchedEffect(musicItem.id) {
         try {
-            val color = viewModel.getDominantColor(musicItem)
-            dominantColor = color
-            viewModel.songColorCache[musicItem.id] = color
+            val c = viewModel.getDominantColor(musicItem)
+            dominant = c
+            viewModel.songColorCache[musicItem.id] = c
         } catch (e: Exception) {
-            Log.e("MusicItemCard", "Failed to load palette", e)
+            Log.e("MusicItemCard", "Palette error", e)
         }
     }
 
     AnimatedVisibility(
-        visibleState = visibleState,
-        enter = fadeIn(animationSpec = tween(400)) +
-                scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+        visibleState = visible,
+        enter = fadeIn(tween(400)) +
+                scaleIn(initialScale = 0.8f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(8.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple()
-                ) { onClick() }
-                .padding(8.dp),
+                ) { onClick() },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -184,52 +180,59 @@ internal fun MusicItemCard(
                     .size(220.dp)
                     .aspectRatio(1f)
                     .clip(CircleShape)
-                    .background(backgroundColor),
+                    .background(SolidBlack),
                 contentAlignment = Alignment.Center
             ) {
-                // VINYL BACKGROUND (Grooves + Color)
+                // Vinyl base + grooves
                 Canvas(
                     modifier = Modifier
                         .size(220.dp)
-                        .graphicsLayer() // 4. GPU Acceleration
+                        .graphicsLayer()
                 ) {
-                    val centerX = size.width / 2
-                    val centerY = size.height / 2
                     val radius = size.minDimension / 2
+                    val center = Offset(size.width / 2, size.height / 2)
                     val labelRadius = radius * 0.48f
 
-                    // Base Color
+                    // Color blend
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(vinylLight, dominantColor, vinylDarker),
-                            center = Offset(centerX, centerY),
+                            listOf(vinylLight, dominant, vinylDark),
+                            center = center,
                             radius = radius
                         ),
                         radius = radius
                     )
 
                     // Grooves
-                    val outerGrooveStart = labelRadius + (radius * 0.05f)
-                    val outerGrooveSpacing = (radius * 0.95f - outerGrooveStart) / 6f
+                    val start = labelRadius + (radius * 0.05f)
+                    val spacing = (radius * 0.95f - start) / 6f
 
-                    for (i in 0 until 6) {
-                        val grooveRadius = outerGrooveStart + (i * outerGrooveSpacing)
-                        drawCircle(Color.Black.copy(alpha = 0.4f), radius = grooveRadius, style = Stroke(width = 2.2f))
-                        drawCircle(Color.White.copy(alpha = 0.1f), radius = grooveRadius + 1.0f, style = Stroke(width = 1.4f))
+                    repeat(6) { i ->
+                        val r = start + (i * spacing)
+                        drawCircle(
+                            SolidBlack.copy(alpha = 0.4f),
+                            radius = r,
+                            style = Stroke(width = 2.2f)
+                        )
+                        drawCircle(
+                            AppWhite.copy(alpha = 0.1f),
+                            radius = r + 1f,
+                            style = Stroke(width = 1.4f)
+                        )
                     }
 
-                    // Shadow
+                    // Shadow on center label
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(dominantColor.copy(alpha = 0.8f), Color.Transparent),
-                            center = Offset(centerX, centerY),
+                            colors = listOf(dominant.copy(alpha = 0.8f), Color.Transparent),
+                            center = center,
                             radius = labelRadius
                         ),
                         radius = labelRadius
                     )
                 }
 
-                // Album Art
+                // Cover Art
                 SubcomposeAsyncImage(
                     model = IMAGE_BUCKET_URL + musicItem.id + ".webp",
                     contentDescription = null,
@@ -239,36 +242,34 @@ internal fun MusicItemCard(
                     contentScale = ContentScale.Crop
                 )
 
-                // OVERLAY (Hole only, NO DUST)
+                // Vinyl hole
                 Canvas(
-                    modifier = Modifier
-                        .size(220.dp)
-                        .graphicsLayer() // GPU Acceleration
+                    modifier = Modifier.size(220.dp)
                 ) {
                     val radius = size.minDimension / 2
-                    val centerHoleRadius = radius * 0.12f
+                    val hole = radius * 0.12f
 
-                    drawCircle(Color.Black, radius = centerHoleRadius)
-                    drawCircle(Color.White.copy(alpha = 0.15f), radius = centerHoleRadius, style = Stroke(width = 1f))
+                    drawCircle(SolidBlack, radius = hole)
+                    drawCircle(AppWhite.copy(alpha = 0.15f),
+                        radius = hole,
+                        style = Stroke(width = 1f))
                 }
             }
 
+            // Song Title
             Text(
                 text = musicItem.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = DMSansFontFamily,
-                color = onBackgroundColor,
+                style = AppTypography.bodyMedium.copy(color = TextPrimary),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(Modifier.height(4.dp))
 
+            // Artist
             Text(
-                text = musicItem.artist ?: "Unknown",
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = DMSansFontFamily,
-                color = onSurfaceColor,
+                text = musicItem.artist,
+                style = AppTypography.bodySmall.copy(color = TextSecondary),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

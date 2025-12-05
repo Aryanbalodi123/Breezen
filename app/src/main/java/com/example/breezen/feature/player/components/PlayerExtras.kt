@@ -43,16 +43,18 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 
-/* ----------------------
-   PlayerInitialLoadScreen & Transition loader
-   ---------------------- */
+
 @Composable
 internal fun PlayerInitialLoadScreen() {
+    // Load the raw Lottie JSON file
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.plant_loader))
+
+    // drive the animation loop indefinitely
     val progress by animateLottieCompositionAsState(
         composition,
         iterations = LottieConstants.IterateForever
     )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -62,7 +64,7 @@ internal fun PlayerInitialLoadScreen() {
         LottieAnimation(
             composition = composition,
             progress = { progress },
-            modifier = Modifier.size(250.dp)
+            modifier = Modifier.size(250.dp) // Large size for initial load impact
         )
     }
 }
@@ -74,6 +76,8 @@ internal fun PlayerTransitionLoader(modifier: Modifier = Modifier) {
         composition,
         iterations = LottieConstants.IterateForever
     )
+
+    // Centered overlay within the provided modifier constraints
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LottieAnimation(
             composition = composition,
@@ -83,19 +87,23 @@ internal fun PlayerTransitionLoader(modifier: Modifier = Modifier) {
     }
 }
 
+
 @Composable
 internal fun NextUpCard(hazeState: HazeState, nextUpSong: Song?) {
+    // Smoothly fade the card in when a song exists, and out when it doesn't
     AnimatedVisibility(
         visible = nextUpSong != null,
         enter = fadeIn(animationSpec = tween(600)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
         if (nextUpSong == null) return@AnimatedVisibility
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .clip(RoundedCornerShape(20.dp))
+                // Apply the glassmorphism blur effect
                 .hazeEffect(
                     hazeState,
                     style = HazeStyle(
@@ -103,6 +111,7 @@ internal fun NextUpCard(hazeState: HazeState, nextUpSong: Song?) {
                         tint = HazeTint(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f))
                     )
                 )
+                // Subtle border to define edges against complex backgrounds
                 .border(
                     1.dp,
                     MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
@@ -111,6 +120,7 @@ internal fun NextUpCard(hazeState: HazeState, nextUpSong: Song?) {
                 .padding(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Next Track Album Art
                 AsyncImage(
                     model = IMAGE_BUCKET_URL + nextUpSong.id + ".webp",
                     contentDescription = "Next track cover",
@@ -122,6 +132,7 @@ internal fun NextUpCard(hazeState: HazeState, nextUpSong: Song?) {
 
                 Spacer(modifier = Modifier.width(12.dp))
 
+                // Track Details
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "NEXT UP",

@@ -1,4 +1,4 @@
-package com.example.breezen.feature.settings
+package com.example.breezen.feature.settings.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -33,8 +33,10 @@ import androidx.compose.ui.window.Dialog
 import com.example.breezen.core.ui.theme.AppBlack
 import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.AppWhite
+import com.example.breezen.core.ui.theme.CornerLarge
 import com.example.breezen.core.ui.theme.SystemStop
 import com.example.breezen.core.ui.theme.TextSecondary
+import com.example.breezen.feature.settings.SmallButton
 
 @Composable
 fun LogoutModal(
@@ -54,12 +56,12 @@ fun LogoutModal(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 22.dp)
-                    .clip(RoundedCornerShape(26.dp))
+                    .clip(RoundedCornerShape(CornerLarge))
                     .background(AppBlack.copy(alpha = 0.95f))
                     .border(
                         1.dp,
                         AppWhite.copy(alpha = 0.12f),
-                        RoundedCornerShape(26.dp)
+                        RoundedCornerShape(CornerLarge)
                     )
                     .padding(26.dp),
                 horizontalAlignment = Alignment.CenterHorizontally

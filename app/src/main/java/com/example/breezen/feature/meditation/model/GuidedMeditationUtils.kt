@@ -1,9 +1,9 @@
+package com.example.breezen.feature.meditation.model
+
 import androidx.compose.ui.graphics.Color
 import com.example.breezen.R
 import com.example.breezen.core.ui.theme.pastelColors
 import com.example.breezen.feature.meditation.MeditationViewModel
-import com.example.breezen.feature.meditation.model.GuidedMeditation
-import com.example.breezen.feature.meditation.model.pastelShade
 
 fun createGuidedMeditationData(
     viewModel: MeditationViewModel,
@@ -11,12 +11,16 @@ fun createGuidedMeditationData(
 ): GuidedMeditation {
 
     val vectorDrawables = listOf(
-        R.drawable.pebble, R.drawable.ring, R.drawable.tablet_broken,
-        R.drawable.v_component, R.drawable.three_d, R.drawable.triangle,
+        R.drawable.pebble,
+        R.drawable.ring,
+        R.drawable.tablet_broken,
+        R.drawable.v_component,
+        R.drawable.three_d,
+        R.drawable.triangle,
         R.drawable.three_circle
     )
 
-    // NO remember here, because not composable
+    // Ensures no two consecutive cards use the same pastel color
     val shuffledColors = pastelColors.shuffled().toMutableList()
     for (i in 1 until shuffledColors.size) {
         if (shuffledColors[i] == shuffledColors[i - 1]) {
@@ -24,15 +28,21 @@ fun createGuidedMeditationData(
         }
     }
 
-    val vector = vectorDrawables[index % 7]
-    val baseColor = shuffledColors[index % pastelColors.size]
-    val shade = pastelShade(baseColor, 0.55f)
-    val parts = viewModel.mp3ToTitle[index][1].split(" - ")
+    val backgroundColor = shuffledColors[index % pastelColors.size]
+    val shade = pastelShade(backgroundColor, 0.55f)
+    val vector = vectorDrawables[index % vectorDrawables.size]
+
+    // Extract title and subtitle from your mp3 mapping
+    val (rawTitle, rawSubtitle) = viewModel.mp3ToTitle[index][1]
+        .split(" - ")
+        .let { parts ->
+            (parts.firstOrNull() ?: "") to (parts.getOrNull(1) ?: "")
+        }
 
     return GuidedMeditation(
-        title = parts.firstOrNull() ?: "",
-        subtitle = parts.getOrNull(1) ?: "",
-        backgroundColor = baseColor,
+        title = rawTitle,
+        subtitle = rawSubtitle,
+        backgroundColor = backgroundColor,
         titleColor = Color.Black,
         secondaryColor = shade,
         vectorResId = vector,

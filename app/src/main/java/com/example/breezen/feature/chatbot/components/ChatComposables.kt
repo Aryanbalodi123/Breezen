@@ -1,16 +1,20 @@
 package com.example.breezen.feature.chatbot.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,74 +33,52 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.ThumbDown
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.SelfImprovement
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.breezen.R
 import com.example.breezen.core.ui.components.BackButton
-import com.example.breezen.core.ui.theme.DMSansFontFamily
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.CornerCircle
+import com.example.breezen.core.ui.theme.CornerLarge
+import com.example.breezen.core.ui.theme.CornerMedium
+import com.example.breezen.core.ui.theme.DarkGreen
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
+import com.example.breezen.core.ui.theme.LightGreen
 import com.example.breezen.core.ui.theme.Prata
+import com.example.breezen.core.ui.theme.WhiteAlpha06
+import com.example.breezen.core.ui.theme.WhiteAlpha12
+import com.example.breezen.core.ui.theme.WhiteAlpha20
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
-// -----------------------------------------------------
-// PASTEL GREEN THEME COLORS
-// -----------------------------------------------------
-
-// -----------------------------
-// DARK GREEN PREMIUM PALETTE
-// -----------------------------
-
-// Deep forest background
-val APP_BACKGROUND = Color(0xFF0E1A16)           // very dark green-black
-
-// Primary accent (emerald green)
-private val APP_PRIMARY = Color(0xFF2E7D32)      // emerald / dark-green accent
-
-// Slightly brighter variant
-private val APP_PRIMARY_DARK = Color(0xFF43A047) // mid-emerald
-
-// Text on primary surfaces
-private val APP_ON_PRIMARY = Color.White
-
-// Soft warm white for all text on dark backgrounds
-private val APP_ON_SURFACE = Color(0xFFF1F8E9)   // mint-tinted off-white
-
-// Dark muted card surface
-private val APP_CARD = Color(0xFF1B2A22)         // dark desaturated green
-
-// Icon tint (cool mint)
-private val APP_ICON_TINT = Color(0xFFA5D6A7)    // mint pastel on dark
-
-// AI bubble translucent surface
-private val APP_SURFACE_TRANSLUCENT = Color(0xFF1B2A22).copy(alpha = 0.55f)
-
-
-// -----------------------------------------------------
+// ----------------------------------------------------------------------------------
 // TOP HEADER
-// -----------------------------------------------------
-
+// ----------------------------------------------------------------------------------
 @Composable
 internal fun TopHeader(
     dailyCount: Int,
@@ -105,7 +87,7 @@ internal fun TopHeader(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         BackButton(navController)
 
@@ -114,29 +96,29 @@ internal fun TopHeader(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = APP_CARD.copy(alpha = 0.7f),
-                shadowElevation = 2.dp
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DarkGreen.copy(alpha = 0.25f)),
+                shape = RoundedCornerShape(CornerCircle),
+                elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "Zeni",
-                        color = APP_ON_SURFACE,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontFamily = FunnelDisplayFamily,
-                        fontWeight = FontWeight.Bold
+                        color = LightGreen,
+                        style = AppTypography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FunnelDisplayFamily
                     )
 
                     Spacer(Modifier.width(8.dp))
 
                     Icon(
-                        painterResource(id = R.drawable.sparkles),
+                        painter = painterResource(id = R.drawable.sparkles),
                         contentDescription = null,
-                        tint = APP_ICON_TINT,
+                        tint = LightGreen,
                         modifier = Modifier.size(18.dp)
                     )
 
@@ -144,28 +126,34 @@ internal fun TopHeader(
 
                     val remaining = (5 - dailyCount).coerceAtLeast(0)
                     Text(
-                        text = "$remaining left",
-                        color = APP_ON_SURFACE.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "|  $remaining left",
+                        color = LightGreen,
+                        style = AppTypography.titleMedium,
                         fontFamily = FunnelDisplayFamily
                     )
                 }
             }
         }
 
-        ActionButton(
-            icon = Icons.Default.Add,
-            contentDescription = "New Chat",
-            onClick = onNewChatClicked
-        )
-    }
+        IconButton(
+            onClick =  onNewChatClicked ,
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(WhiteAlpha12)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Back",
+                tint = Color.White
+            )
+
+        }    }
 }
 
-
-// -----------------------------------------------------
+// ----------------------------------------------------------------------------------
 // EMPTY STATE
-// -----------------------------------------------------
-
+// ----------------------------------------------------------------------------------
 @Composable
 internal fun EmptyStateLarge(onSendPrompt: (String) -> Unit) {
     Column(
@@ -175,18 +163,18 @@ internal fun EmptyStateLarge(onSendPrompt: (String) -> Unit) {
         Spacer(Modifier.height(40.dp))
 
         Text(
-            "Hey there,",
-            style = MaterialTheme.typography.titleMedium,
-            color = APP_ON_SURFACE.copy(alpha = 0.75f),
+            text = "Hey there,",
+            style = AppTypography.titleMedium,
+            color = DarkGreen.copy(alpha = 0.7f),
             fontFamily = Prata
         )
 
         Spacer(Modifier.height(40.dp))
 
         Text(
-            "How are you feeling\nthis morning?",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
-            color = APP_ON_SURFACE,
+            text = "How are you feeling\nthis morning?",
+            style = AppTypography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = DarkGreen,
             textAlign = TextAlign.Center,
             fontFamily = FunnelDisplayFamily
         )
@@ -198,28 +186,25 @@ internal fun EmptyStateLarge(onSendPrompt: (String) -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SuggestionButton(
-                title = "Morning Calm",
-                subtitle = "5-min breathing",
-                icon = Icons.Outlined.SelfImprovement,
-                modifier = Modifier.weight(1f),
-                onClick = { onSendPrompt("Guide me through a short 5-minute morning breathing exercise.") }
-            )
+                "Morning Calm",
+                "5-min breathing",
+                Icons.Outlined.SelfImprovement,
+                Modifier.weight(1f)
+            ) { onSendPrompt("Guide me through a short 5-minute morning breathing exercise.") }
+
             SuggestionButton(
-                title = "Sleep Well",
-                subtitle = "Relaxation story",
-                icon = Icons.Outlined.Bedtime,
-                modifier = Modifier.weight(1f),
-                onClick = { onSendPrompt("Tell me a calming sleep story to help me relax.") }
-            )
+                "Sleep Well",
+                "Relaxation story",
+                Icons.Outlined.Bedtime,
+                Modifier.weight(1f)
+            ) { onSendPrompt("Tell me a calming sleep story to help me relax.") }
         }
     }
 }
 
-
-// -----------------------------------------------------
+// ----------------------------------------------------------------------------------
 // SUGGESTION BUTTON
-// -----------------------------------------------------
-
+// ----------------------------------------------------------------------------------
 @Composable
 fun SuggestionButton(
     title: String,
@@ -231,8 +216,8 @@ fun SuggestionButton(
     Card(
         onClick = onClick,
         modifier = modifier.height(140.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = APP_CARD),
+        shape = RoundedCornerShape(CornerLarge),
+        colors = CardDefaults.cardColors(containerColor = DarkGreen.copy(alpha = 0.15f)),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
@@ -240,19 +225,13 @@ fun SuggestionButton(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                icon,
-                null,
-                tint = APP_ICON_TINT,
-                modifier = Modifier.size(28.dp)
-            )
-
+            Icon(icon, null, tint = DarkGreen, modifier = Modifier.size(28.dp))
             Spacer(Modifier.height(12.dp))
 
             Text(
-                title,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = APP_ON_SURFACE,
+                text = title,
+                style = AppTypography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = DarkGreen,
                 textAlign = TextAlign.Center,
                 fontFamily = Prata
             )
@@ -260,169 +239,220 @@ fun SuggestionButton(
             Spacer(Modifier.height(4.dp))
 
             Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = APP_ON_SURFACE.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-                fontFamily = FunnelDisplayFamily
+                text = subtitle,
+                style = AppTypography.bodySmall,
+                color = DarkGreen.copy(alpha = 0.7f),
+                fontFamily = FunnelDisplayFamily,
+                textAlign = TextAlign.Center
             )
         }
     }
 }
 
-
-// -----------------------------------------------------
-// MESSAGE BUBBLES
-// -----------------------------------------------------
-
+// ----------------------------------------------------------------------------------
+// MESSAGE BUBBLE
+// ----------------------------------------------------------------------------------
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun MessageBubble(
+fun MessageBubble(
     message: String,
     sender: String,
+    isLastMessage: Boolean,
+    hazeState: HazeState,
     onCopy: (String) -> Unit,
     onShare: (String) -> Unit,
     onRegenerate: () -> Unit
 ) {
+    var showActions by remember(message) { mutableStateOf(isLastMessage) }
+    var showContextMenu by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxWidth()) {
 
         if (sender == "AI") {
+
+            // Header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.Default.AutoAwesome,
-                    null,
-                    tint = APP_PRIMARY_DARK,
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = DarkGreen,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Zeni",
-                    color = APP_PRIMARY_DARK,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Zeni",
+                    color = DarkGreen,
+                    style = AppTypography.titleMedium,
                     fontFamily = FunnelDisplayFamily
                 )
             }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
 
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = APP_SURFACE_TRANSLUCENT,
-                shadowElevation = 0.dp,
-                modifier = Modifier.widthIn(max = 520.dp)
-            ) {
-                Box(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = APP_ON_SURFACE,
-                        fontFamily = DMSansFontFamily
-                    )
+            BoxWithConstraints {
+                Card(
+                    modifier = Modifier
+                        .widthIn(max = maxWidth * 0.85f)
+                        .haze(state = hazeState)
+                        .combinedClickable(
+                            onClick = { showActions = !showActions },
+                            onLongClick = { showContextMenu = true }
+                        ),
+                    shape = RoundedCornerShape(CornerMedium),
+                    colors = CardDefaults.cardColors(containerColor = WhiteAlpha12),
+                    elevation = CardDefaults.cardElevation(0.dp)
+                ) {
+                    Box(Modifier.padding(14.dp)) {
+                        Text(
+                            text = message,
+                            color = Color.Black,
+                            style = AppTypography.bodyMedium
+                        )
+                    }
+
+                    // --------------------------------------------------
+                    // LONG PRESS MENU
+                    // --------------------------------------------------
+                    DropdownMenu(
+                        expanded = showContextMenu,
+                        onDismissRequest = { showContextMenu = false },
+                        offset = DpOffset(0.dp, (-10).dp),
+                        // FIX: Apply Shape and Color directly here
+                        shape = RoundedCornerShape(50.dp),
+                        containerColor = DarkGreen,
+                        tonalElevation = 0.dp // Removes the grey overlay
+                    ) {
+                        // Just a Box for padding, no extra Card
+                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+                            ActionButtonsRow(
+                                onCopy = { onCopy(message); showContextMenu = false },
+                                onShare = { onShare(message); showContextMenu = false },
+                                onRegenerate = { onRegenerate(); showContextMenu = false },
+                                containerColor = WhiteAlpha20,
+                                iconColor = Color.White
+                            )
+                        }
+                    }
                 }
             }
 
             Spacer(Modifier.height(8.dp))
-            ActionButtonsRow(onCopy = { onCopy(message) }, onShare = { onShare(message) }, onRegenerate)
+
+            AnimatedVisibility(
+                visible = showActions,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                ActionButtonsRow(
+                    onCopy = { onCopy(message) },
+                    onShare = { onShare(message) },
+                    onRegenerate = onRegenerate
+                )
+            }
 
         } else {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = APP_PRIMARY,
-                    modifier = Modifier.fillMaxWidth(0.8f)
-                ) {
-                    Box(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            message,
-                            color = APP_ON_PRIMARY,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = DMSansFontFamily
-                        )
+            // USER MESSAGE
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                BoxWithConstraints {
+                    Card(
+                        modifier = Modifier
+                            .widthIn(max = maxWidth * 0.80f)
+                            .haze(state = hazeState)
+                            .combinedClickable(
+                                onClick = { },
+                                onLongClick = { showContextMenu = true }
+                            ),
+                        shape = RoundedCornerShape(CornerMedium),
+                        colors = CardDefaults.cardColors(containerColor = WhiteAlpha20)
+                    ) {
+                        Box(Modifier.padding(14.dp)) {
+                            Text(
+                                text = message,
+                                color = Color.Black,
+                                style = AppTypography.bodyMedium
+                            )
+                        }
+
+
                     }
                 }
             }
         }
     }
 }
-
-
-// -----------------------------------------------------
+// --------------------------------------------------------
 // ACTION BUTTONS
-// -----------------------------------------------------
-
+// --------------------------------------------------------
 @Composable
 private fun ActionButtonsRow(
     onCopy: () -> Unit,
     onShare: () -> Unit,
-    onRegenerate: () -> Unit
+    onRegenerate: () -> Unit,
+    containerColor: Color = WhiteAlpha06,
+    iconColor: Color = DarkGreen
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ActionButton(Icons.Default.ThumbUp, "Like") {}
-        ActionButton(Icons.Default.ThumbDown, "Dislike") {}
-        ActionButton(Icons.Default.ContentCopy, "Copy", onCopy)
-        ActionButton(Icons.Default.Share, "Share", onShare)
-        ActionButton(Icons.Default.Refresh, "Regenerate", onRegenerate)
+        ActionButton(Icons.Default.ContentCopy, "Copy", containerColor, iconColor, onCopy)
+        ActionButton(Icons.Default.Share, "Share", containerColor, iconColor, onShare)
+        ActionButton(Icons.Default.Refresh, "Regenerate", containerColor, iconColor, onRegenerate)
     }
 }
 
 @Composable
-internal fun ActionButton(
+private fun ActionButton(
     icon: ImageVector,
     contentDescription: String,
+    containerColor: Color,
+    iconColor: Color,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (isPressed) 0.92f else 1f, spring())
-
     Surface(
-        modifier = Modifier.scale(scale),
-        shape = CircleShape,
-        color = APP_CARD,
-        shadowElevation = 2.dp
+        shape = RoundedCornerShape(CornerCircle),
+        color = containerColor,
+        tonalElevation = 2.dp,
+        modifier = Modifier.size(36.dp),
+        onClick = onClick
     ) {
-        Box(
-            modifier = Modifier.size(36.dp)
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription, tint = APP_ICON_TINT, modifier = Modifier.size(16.dp))
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                icon,
+                contentDescription,
+                tint = iconColor,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
 
-
-// -----------------------------------------------------
+// ----------------------------------------------------------------------------------
 // LOADING BUBBLE
-// -----------------------------------------------------
-
+// ----------------------------------------------------------------------------------
 @Composable
 internal fun LoadingBubble() {
     val infinite = rememberInfiniteTransition()
-    val rotation by infinite.animateFloat(
-        0f, 360f, infiniteRepeatable(tween(2000))
-    )
+    val rotation by infinite.animateFloat(0f, 360f, infiniteRepeatable(tween(2000)))
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            Icons.Default.AutoAwesome, null,
-            tint = APP_PRIMARY_DARK,
-            modifier = Modifier.size(18.dp).rotate(rotation)
-        )
+        Icon(Icons.Default.AutoAwesome, null, tint = DarkGreen,
+            modifier = Modifier.size(18.dp).rotate(rotation))
 
         Spacer(Modifier.width(12.dp))
 
         CircularProgressIndicator(
             modifier = Modifier.size(16.dp),
-            color = APP_PRIMARY_DARK,
+            color = DarkGreen,
             strokeWidth = 2.dp
         )
 
         Spacer(Modifier.width(12.dp))
 
         Text(
-            "Thinking...",
-            color = APP_ON_SURFACE,
-            style = MaterialTheme.typography.bodyMedium,
+            text = "Thinking...",
+            color = DarkGreen.copy(alpha = 0.7f),
+            style = AppTypography.bodyMedium,
             fontFamily = Prata
         )
     }

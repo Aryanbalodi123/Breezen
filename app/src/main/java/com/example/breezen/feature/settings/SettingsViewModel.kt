@@ -1,5 +1,6 @@
 package com.example.breezen.feature.settings
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,7 +34,7 @@ class SettingsViewModel : ViewModel() {
     suspend fun securePasswordUpdate(
         currentPassword: String,
         newPassword: String,
-        context: android.content.Context
+        context: Context
     ): String? {
         return try {
             setState { copy(isLoading = true, error = null) }
@@ -60,12 +61,13 @@ class SettingsViewModel : ViewModel() {
 
 
 
-    fun clearMessages() {
-        setState { copy(message = null, error = null) }
-    }
+//    fun clearMessages() {
+//        setState { copy(message = null, error = null) }
+//    }
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
+
             try {
                 AuthService.logout()
             } catch (e: Exception) {
@@ -84,7 +86,7 @@ class SettingsViewModel : ViewModel() {
                 body = FeedbackBody(feedback)
             )
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

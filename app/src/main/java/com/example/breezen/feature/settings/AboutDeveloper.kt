@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,21 +78,20 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.breezen.R
+import com.example.breezen.core.ui.theme.AccentGreen
 import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.DarkGreen
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
+import com.example.breezen.core.ui.theme.LightGreen
+import com.example.breezen.core.ui.theme.PureWhite
+import com.example.breezen.core.ui.theme.YellowAccent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 import kotlin.random.Random
 
-// ----------------- Color Palette -----------------
-private val LightGreen = Color(0xFFF1F8E9)
-private val DarkGreen = Color(0xFF0F291E)
-private val AccentGreen = Color(0xFF9CCC65)
-private val YellowAccent = Color(0xFFFFF59D)
-private val PureWhite = Color(0xFFFFFFFF)
-private val TextGray = Color(0xFF546E7A)
+
 
 // ----------------- Models -----------------
 data class Language(val name: String, val color: Color)
@@ -102,7 +102,7 @@ val myLanguages = listOf(
     Language("C", Color(0xFFB0BEC5)),          // Mist Grey
     Language("C++", Color(0xFF90CAF9)),        // Pastel Blue
     Language("Python", Color(0xFFA5D6A7)),     // Soft Sage Green
-    Language("JavaScript", Color(0xFFFFF59D)), // Your Theme's Yellow Accent
+    Language("JavaScript", Color(0xFFFFF59D)), // Yellow Accent
     Language("TypeScript", Color(0xFF9FA8DA)), // Periwinkle
     Language("SQL", Color(0xFFEF9A9A)),        // Soft Coral
 
@@ -112,7 +112,7 @@ val myLanguages = listOf(
 
     // Web & DB
     Language("React", Color(0xFF80DEEA)),      // Soft Aqua
-    Language("Next.js", Color(0xFF546E7A)),    // Soft Slate (Darker pastel for contrast)
+    Language("Next.js", Color(0xFF546E7A)),    // Soft Slate
     Language("Tailwind", Color(0xFF4DB6AC)),   // Muted Teal
     Language("Flask", Color(0xFFA1887F)),      // Earthy Brown
     Language("PostgresSQL", Color(0xFFC5E1A5)) // Matcha Green
@@ -130,6 +130,7 @@ data class Ball(
 fun DeveloperPreview(){
     DeveloperProfileScreen(navController = rememberNavController() )
 }
+
 // ----------------- Screen -----------------
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -187,27 +188,26 @@ fun DeveloperProfileScreen(
                             .padding(top = 20.dp)
                             .zIndex(2f)
                     ) {
-                        DecryptTextLine("ARYAN", 48, DarkGreen, FontWeight.Black)
-                        DecryptTextLine("BALODI", 48, DarkGreen, FontWeight.Black)
+                        // RENAMED: DecryptTextLine -> ConsoleRevealEffect
+                        ConsoleRevealEffect("ARYAN", 48, DarkGreen, FontWeight.Black)
+                        ConsoleRevealEffect("BALODI", 48, DarkGreen, FontWeight.Black)
 
-                        // Role line
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        LoveBox()
+                        // RENAMED: LoveBox -> InfiniteLoopText
+                        InfiniteLoopText()
                         Spacer(modifier = Modifier.height(12.dp))
-
-
                     }
 
                     Image(
                         painter = painterResource(id = R.drawable.developer_photo),
                         contentDescription = null,
-                        contentScale = ContentScale.Fit, // full image, no crop
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 80.dp ,y = -(50).dp)
-                            .fillMaxHeight(.55f) // responsive height, 55% of screen
-                            .wrapContentWidth()    // width adjusts automatically
+                            .fillMaxHeight(.55f)
+                            .wrapContentWidth()
                             .zIndex(1f)
                     )
 
@@ -251,7 +251,8 @@ fun DeveloperProfileScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                ModernPillButton("WHAT I KNOW", YellowAccent, DarkGreen) {
+                // RENAMED: ModernPillButton -> SkillNodeTrigger
+                SkillNodeTrigger("WHAT I KNOW", YellowAccent, DarkGreen) {
                     showSkills = true
                 }
 
@@ -259,13 +260,14 @@ fun DeveloperProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    SocialIconBtn(R.drawable.github, "GitHub") {
+                    // RENAMED: SocialIconBtn -> RepoLinkButton
+                    RepoLinkButton(R.drawable.github, "GitHub") {
                         openUrl(navController.context, "https://github.com")
                     }
-                    SocialIconBtn(R.drawable.linkedin, "LinkedIn") {
+                    RepoLinkButton(R.drawable.linkedin, "LinkedIn") {
                         openUrl(navController.context, "https://linkedin.com")
                     }
-                    SocialIconBtn(R.drawable.gmail, "Email") {
+                    RepoLinkButton(R.drawable.gmail, "Email") {
                         openEmail(navController.context)
                     }
                 }
@@ -274,14 +276,15 @@ fun DeveloperProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    ModernActionButton(
+                    // RENAMED: ModernActionButton -> DashboardActionCard
+                    DashboardActionCard(
                         "Feedback",
                         Icons.AutoMirrored.Rounded.Message,
                         false,
                         Modifier.weight(1f)
                     ) { showFeedbackDialog = true }
 
-                    ModernActionButton(
+                    DashboardActionCard(
                         "Buy Coffee",
                         Icons.Rounded.Coffee,
                         true,
@@ -303,7 +306,8 @@ fun DeveloperProfileScreen(
 
         if (showDonateDialog) {
             ModalOverlay {
-                ModernDialog(
+                // RENAMED: ModernDialog -> SystemOverlayDialog
+                SystemOverlayDialog(
                     title = "Buy me a Coffee",
                     message = "Thanks for supporting the work!",
                     btnText = "Support",
@@ -313,32 +317,23 @@ fun DeveloperProfileScreen(
         }
 
         if (showSkills) {
-            PhysicsBallsOverlay(myLanguages) { showSkills = false }
+            // RENAMED: PhysicsBallsOverlay -> PhysicsEngineOverlay
+            PhysicsEngineOverlay(myLanguages) { showSkills = false }
         }
     }
 }
 
+// RENAMED from LoveBox (Sounds too romantic) -> InfiniteLoopText (Sounds technical)
 @Composable
-fun LoveBox() {
-    // One-word, inspiring, professional words
+fun InfiniteLoopText() {
     val items = listOf(
-        "Creating",
-        "Learning",
-        "Building",
-        "Improving",
-        "Designing",
-        "Innovating",
-        "Coding",
-        "Exploring",
-        "Dreaming",
-        "Growing",
-        "Inspiring",
-        "Inventing"
+        "Creating", "Learning", "Building", "Improving",
+        "Designing", "Innovating", "Coding", "Exploring",
+        "Dreaming", "Growing", "Inspiring", "Inventing"
     )
 
-    var index by remember { mutableStateOf(0) }
+    var index by remember { mutableIntStateOf(0) }
 
-    // Auto rotate every 2 seconds
     LaunchedEffect(Unit) {
         while (true) {
             delay(2000)
@@ -346,10 +341,7 @@ fun LoveBox() {
         }
     }
 
-    Box(
-
-
-    ) {
+    Box {
         Row(verticalAlignment = Alignment.CenterVertically) {
 
             Text(
@@ -361,25 +353,26 @@ fun LoveBox() {
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            Box(    modifier = Modifier
-
-                .clip(RoundedCornerShape(7.dp))
-                .background(DarkGreen)
-                .padding(horizontal = 9.dp, vertical = 6.dp)){
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(DarkGreen)
+                    .padding(horizontal = 9.dp, vertical = 6.dp)
+            ){
                 AnimatedContent(
                     targetState = index,
                     transitionSpec = {
                         slideInVertically { it } + fadeIn() togetherWith
                                 slideOutVertically { -it } + fadeOut()
-                    }
+                    },
+                    label = "loop_anim"
                 ) { i ->
                     Text(
                         text = items[i],
                         color = YellowAccent,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-
-                        )
+                    )
                 }
             }
         }
@@ -430,11 +423,9 @@ fun FeedbackDialog(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-
         Button(
             onClick = {
                 if (text.isBlank()) return@Button
-
                 sending = true
                 scope.launch {
                     val result = viewModel.sendUserFeedback(text)
@@ -457,7 +448,6 @@ fun FeedbackDialog(
             )
         }
 
-
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             "Cancel",
@@ -467,8 +457,9 @@ fun FeedbackDialog(
     }
 }
 
+// RENAMED from ModernDialog -> SystemOverlayDialog
 @Composable
-fun ModernDialog(title: String, message: String, btnText: String, onDismiss: () -> Unit) {
+fun SystemOverlayDialog(title: String, message: String, btnText: String, onDismiss: () -> Unit) {
     Column(
         modifier = Modifier
             .width(320.dp)
@@ -505,8 +496,9 @@ fun ModalOverlay(content: @Composable () -> Unit) {
 
 // --------------- Buttons & Icons --------------------
 
+// RENAMED from SocialIconBtn -> RepoLinkButton
 @Composable
-fun SocialIconBtn(icon: Int, label: String, onClick: () -> Unit) {
+fun RepoLinkButton(icon: Int, label: String, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.bounceClick().clickable { onClick() }) {
         Box(
             modifier = Modifier
@@ -521,8 +513,9 @@ fun SocialIconBtn(icon: Int, label: String, onClick: () -> Unit) {
     }
 }
 
+// RENAMED from ModernPillButton -> SkillNodeTrigger
 @Composable
-fun ModernPillButton(text: String, backgroundColor: Color, textColor: Color, onClick: () -> Unit) {
+fun SkillNodeTrigger(text: String, backgroundColor: Color, textColor: Color, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -538,8 +531,9 @@ fun ModernPillButton(text: String, backgroundColor: Color, textColor: Color, onC
     }
 }
 
+// RENAMED from ModernActionButton -> DashboardActionCard
 @Composable
-fun ModernActionButton(
+fun DashboardActionCard(
     text: String,
     icon: ImageVector,
     isPrimary: Boolean,
@@ -568,8 +562,9 @@ fun ModernActionButton(
 
 // ----------------- Decrypt Text Effect -----------------
 
+// RENAMED from DecryptTextLine -> ConsoleRevealEffect
 @Composable
-fun DecryptTextLine(text: String, fontSize: Int, color: Color, fontWeight: FontWeight) {
+fun ConsoleRevealEffect(text: String, fontSize: Int, color: Color, fontWeight: FontWeight) {
     var display by remember { mutableStateOf("") }
     val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789*&^%"
 
@@ -596,8 +591,9 @@ fun DecryptTextLine(text: String, fontSize: Int, color: Color, fontWeight: FontW
 
 // ----------------- OPTIMIZED PHYSICS OVERLAY -----------------
 
+// RENAMED from PhysicsBallsOverlay -> PhysicsEngineOverlay
 @Composable
-fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
+fun PhysicsEngineOverlay(languages: List<Language>, onDismiss: () -> Unit) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -607,8 +603,7 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
         val width = maxWidth.value
         val height = maxHeight.value
 
-        // DYNAMIC SIZING: Calculate radius based on screen width
-        // Balls will be between 11% and 16% of the screen width
+        // DYNAMIC SIZING
         val minRadius = width * 0.11f
         val maxRadius = width * 0.16f
 
@@ -617,7 +612,7 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
                 Ball(
                     lang,
                     x = width / 2 + (Random.nextFloat() - 0.5f) * (width * 0.5f),
-                    y = -height * 0.5f - i * (maxRadius * 2), // Drop them from high up
+                    y = -height * 0.5f - i * (maxRadius * 2),
                     vx = (Random.nextFloat() - 0.5f) * 50f,
                     vy = 0f,
                     radius = minRadius + Random.nextFloat() * (maxRadius - minRadius)
@@ -628,7 +623,7 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
         var trigger by remember { mutableLongStateOf(0L) }
 
         LaunchedEffect(Unit) {
-            val gravity = 1500f // Stronger gravity for "heavy" feel
+            val gravity = 1500f
             val drag = 0.99f
             val dt = 0.016f
 
@@ -642,23 +637,18 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
                     b.y += b.vy * dt
                 }
 
-                // 2. Solve Collisions (Repeat for stability)
+                // 2. Solve Collisions
                 repeat(4) {
                     // Wall Interactions
                     balls.forEach { b ->
-                        // Floor
                         if (b.y > height - b.radius) {
                             b.y = height - b.radius
-                            b.vy *= -0.5f // Dampened bounce
-                            b.vx *= 0.9f  // Floor friction
+                            b.vy *= -0.5f
+                            b.vx *= 0.9f
                         }
-                        // Ceiling (optional, prevents flying off top)
                         if (b.y < -height * 2) {
-                            // If it flies WAY too high, push it down (safety net)
-                            b.y = -height.toFloat()
+                            b.y = -height
                         }
-
-                        // Walls
                         if (b.x < b.radius) {
                             b.x = b.radius
                             b.vx *= -0.6f
@@ -711,8 +701,7 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
                     }
                 }
 
-                // 3. Final Clamp (Strict Overflow Protection)
-                // Even if physics pushes them out, this forces them back in.
+                // 3. Final Clamp
                 balls.forEach { b ->
                     b.x = b.x.coerceIn(b.radius, width - b.radius)
                     b.y = b.y.coerceAtMost(height - b.radius)
@@ -724,7 +713,6 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
         }
 
         Box(Modifier.fillMaxSize()) {
-            // Close Button
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
@@ -740,13 +728,11 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
                 )
             }
 
-            // Draw Balls
             balls.forEach { b ->
                 key(b.language.name, trigger) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            // Optimized rendering
                             .graphicsLayer {
                                 translationX = (b.x - b.radius).dp.toPx()
                                 translationY = (b.y - b.radius).dp.toPx()
@@ -755,16 +741,14 @@ fun PhysicsBallsOverlay(languages: List<Language>, onDismiss: () -> Unit) {
                             .shadow(6.dp, CircleShape)
                             .background(b.language.color, CircleShape)
                             .clickable {
-                                // Fun interaction: Kick the ball
                                 b.vy = -1200f
                                 b.vx = (Random.nextFloat() - 0.5f) * 1000f
                             }
                     ) {
-                        // Responsive Text Sizing
-                        val isDark = b.language.name in listOf("NumPy", "Next.js", "C", "Flask")
+                        val isDark = b.language.name in listOf("Java", "Next.js", "C", "Flask")
                         Text(
                             b.language.name,
-                            fontSize = (b.radius * 0.35f).sp, // Text scales with ball
+                            fontSize = (b.radius * 0.35f).sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isDark) PureWhite else Color(0xFF0F291E),
                             textAlign = TextAlign.Center,
@@ -787,9 +771,7 @@ fun Modifier.bounceClick() = composed {
         awaitPointerEventScope {
             while (true) {
                 awaitFirstDown(false)
-                pressed = true
                 waitForUpOrCancellation()
-                pressed = false
             }
         }
     }

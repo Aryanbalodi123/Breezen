@@ -1,5 +1,9 @@
+@file:Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
+
 package com.example.breezen.core.ui.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Spring
@@ -32,9 +36,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -65,37 +69,26 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 
-/**
- * Optimized single-file EnhancedBottomNavigation with Crossfade (Option A).
- *
- * Key performance choices:
- *  - Uses Crossfade instead of AnimatedContent to avoid heavy re-measure/layout.
- *  - HazeStyle is remembered and kept stable to avoid re-creating expensive blur state.
- *  - Only background color is animated (cheap). Avoids animating the haze tint per frame.
- *  - Uses AnimatedVisibility with simple fade for the close button.
- *
- * Drop-in replacement for your previous component.
- */
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun EnhancedBottomNavigation(
+fun BottomNavigationBar(
     navigation: AppNavigationState,
     hazeState: HazeState,
     chatViewModel: ChatViewModel
 ) {
     val isChatScreen = navigation.isCurrentRoute("chatbot")
 
-    // --- SIZING CONSTANTS ---
     val barHeight = 64.dp
     val barCornerRadius = 50.dp
     val closeButtonSize = 48.dp
 
-    // --- BACKGROUND COLOR (cheap animation only) ---
-    val targetBg = if (isChatScreen) Color.Black.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.12f)
-    val animatedBg by androidx.compose.animation.animateColorAsState(targetBg, animationSpec = tween(200), label = "nav_bg")
+    val targetBg = if (isChatScreen) Color.Black.copy(alpha = 0.10f)
+    else Color.White.copy(alpha = 0.12f)
 
-    // Keep a stable haze style to avoid re-allocations during transitions.
-    // We pick a neutral tint that works well in both states; avoid animating this.
+    val animatedBg by androidx.compose.animation.animateColorAsState(
+        targetBg, tween(200), label = "nav_bg"
+    )
+
     val glassHazeStyle = remember {
         HazeStyle(
             blurRadius = 14.dp,
@@ -116,7 +109,6 @@ fun EnhancedBottomNavigation(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
-            // --- MAIN BAR (outer container holds hazeEffect so it's not re-created each frame) ---
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -126,21 +118,16 @@ fun EnhancedBottomNavigation(
                     .background(animatedBg),
                 contentAlignment = Alignment.Center
             ) {
-                // Crossfade is lightweight and avoids heavy recomposition work.
                 Crossfade(
                     targetState = isChatScreen,
                     animationSpec = tween(180),
                     label = "NavCrossfade"
                 ) { isChat ->
-                    if (isChat) {
-                        ChatInputBar(chatViewModel = chatViewModel)
-                    } else {
-                        FluidBottomBar(navigation = navigation)
-                    }
+                    if (isChat) ChatInputBar(chatViewModel)
+                    else FluidBottomBar(navigation)
                 }
             }
 
-            // --- CLOSE BUTTON (visible only on chat) ---
             AnimatedVisibility(
                 visible = isChatScreen,
                 enter = fadeIn(tween(140)),
@@ -167,12 +154,10 @@ fun EnhancedBottomNavigation(
     }
 }
 
-/* ---------------------- Chat Input Bar ---------------------- */
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ChatInputBar(
-    chatViewModel: ChatViewModel
-) {
+fun ChatInputBar(chatViewModel: ChatViewModel) {
+
     var input by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -183,7 +168,6 @@ fun ChatInputBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // left icon + text field
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
@@ -216,24 +200,21 @@ fun ChatInputBar(
                         keyboardController?.hide()
                     }
                 }),
-                decorationBox = { innerTextField ->
+                decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (input.isEmpty()) {
                             Text(
                                 "Message Zeni...",
-                                style = LocalTextStyle.current.copy(
-                                    color = Color.White.copy(alpha = 0.48f),
-                                    fontSize = 15.sp
-                                )
+                                color = Color.White.copy(alpha = 0.48f),
+                                fontSize = 15.sp
                             )
                         }
-                        innerTextField()
+                        inner()
                     }
                 }
             )
         }
 
-        // send button (visible only when text exists)
         AnimatedVisibility(
             visible = input.isNotBlank(),
             enter = scaleIn(spring(dampingRatio = 0.6f)) + fadeIn(),
@@ -254,7 +235,7 @@ fun ChatInputBar(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.Send,
+                    Icons.AutoMirrored.Filled.Send,
                     contentDescription = "Send",
                     tint = Color.Black,
                     modifier = Modifier.size(18.dp)
@@ -264,8 +245,6 @@ fun ChatInputBar(
     }
 }
 
-/* ---------------------- Fluid (Normal) Bottom Bar ---------------------- */
-
 data class FluidNavItem(
     val route: String,
     val iconRes: Int,
@@ -273,9 +252,8 @@ data class FluidNavItem(
 )
 
 @Composable
-fun FluidBottomBar(
-    navigation: AppNavigationState
-) {
+fun FluidBottomBar(navigation: AppNavigationState) {
+
     val items = remember {
         listOf(
             FluidNavItem("home", R.drawable.home, "Home"),
@@ -288,8 +266,8 @@ fun FluidBottomBar(
 
     val selectedIndex by remember(navigation.currentRoute) {
         derivedStateOf {
-            val index = items.indexOfFirst { it.route == navigation.currentRoute }
-            if (index != -1) index else 0
+            items.indexOfFirst { it.route == navigation.currentRoute }
+                .takeIf { it != -1 } ?: 0
         }
     }
 
@@ -306,7 +284,6 @@ fun FluidBottomBar(
             label = "indicator_slide"
         )
 
-        // sliding ball (kept simple)
         Box(
             modifier = Modifier
                 .offset(x = indicatorOffset)
@@ -330,9 +307,8 @@ fun FluidBottomBar(
                 FluidNavItemView(
                     item = item,
                     isSelected = index == selectedIndex,
-                    width = itemWidth,
-                    onClick = { navigation.navigateTo(item.route) }
-                )
+                    width = itemWidth
+                ) { navigation.navigateTo(item.route) }
             }
         }
     }
@@ -348,7 +324,7 @@ fun FluidNavItemView(
     val interactionSource = remember { MutableInteractionSource() }
 
     val iconColor by androidx.compose.animation.animateColorAsState(
-        targetValue = if (isSelected) Color.White else Color.White,
+        targetValue = Color.White,
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "icon_color"
     )

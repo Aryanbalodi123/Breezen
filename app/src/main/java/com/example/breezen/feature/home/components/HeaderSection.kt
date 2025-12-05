@@ -1,5 +1,7 @@
 package com.example.breezen.feature.home.components
 
+// --- FIX: Corrected import ---
+// --- END FIX ---
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,13 +31,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.breezen.R
-// --- FIX: Corrected import ---
 import com.example.breezen.core.network.Song
-// --- END FIX ---
 import com.example.breezen.core.ui.components.ShimmerBox
+import com.example.breezen.core.ui.theme.AppBlack
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.AppWhite
+import com.example.breezen.core.ui.theme.TextPrimary
+import com.example.breezen.core.ui.util.gradientBackground
 import com.example.breezen.feature.music.TabViewModel
 import com.example.breezen.feature.music.utils.playSongFromPlaylist
-import com.example.breezen.core.ui.util.gradientBackground
 
 @Composable
 fun HeaderSection(
@@ -71,15 +74,15 @@ fun HeaderSection(
             }
         }
         Column(
-            verticalArrangement = Arrangement.spacedBy(0.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 "GOOD MORNING ${username.uppercase()}",
-                style = MaterialTheme.typography.bodySmall.copy(
+                style = AppTypography.bodySmall.copy(
                     letterSpacing = 2.sp, fontSize = 12.sp, fontWeight = FontWeight.Bold
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = TextPrimary
             )
 
             if (isLoading) {
@@ -91,10 +94,10 @@ fun HeaderSection(
             } else {
                 Text(
                     text = song?.title ?: "No Song",
-                    style = MaterialTheme.typography.displayMedium.copy(
+                    style = AppTypography.displayMedium.copy(
                         fontWeight = FontWeight.Light, letterSpacing = 2.sp, fontSize = 48.sp
                     ),
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = TextPrimary
                 )
             }
 
@@ -107,14 +110,14 @@ fun HeaderSection(
             } else {
                 Text(
                     text = "${song?.duration?.div(60) ?: 0} MINUTES",
-                    style = MaterialTheme.typography.bodySmall.copy(
+                    style = AppTypography.bodySmall.copy(
                         letterSpacing = 2.sp, fontWeight = FontWeight.Bold, fontSize = 12.sp
                     ),
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = TextPrimary
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(36.dp))
             IconButton(
                 onClick = {
                     if (!isLoading && song != null && allSongs.isNotEmpty()) {
@@ -123,18 +126,17 @@ fun HeaderSection(
                 },
                 enabled = !isLoading && song != null,
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(54.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isLoading) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                        else MaterialTheme.colorScheme.onBackground
+                        AppWhite
                     )
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.play),
-                    modifier = Modifier.size(22.dp),
+                    modifier = Modifier.size(28.dp),
                     contentDescription = "Play",
-                    tint = MaterialTheme.colorScheme.background
+                    tint = AppBlack
                 )
             }
         }

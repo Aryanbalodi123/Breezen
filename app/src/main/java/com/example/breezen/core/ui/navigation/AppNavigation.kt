@@ -1,6 +1,6 @@
 package com.example.breezen.core.ui.navigation
 
-// --- Settings Imports ---
+// ------- IMPORTS -------
 import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
@@ -41,7 +41,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.breezen.core.data.OnboardingPreferences
-import com.example.breezen.core.ui.components.EnhancedBottomNavigation
+import com.example.breezen.core.ui.components.BottomNavigationBar
 import com.example.breezen.core.ui.util.overshootEasing
 import com.example.breezen.feature.breathe.BreatheScreen
 import com.example.breezen.feature.chatbot.ChatBotScreen
@@ -63,39 +63,27 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 
-// -------------------------------------------------------------
-//  APP NAVIGATION STATE  (FULL FIXED VERSION)
-// -------------------------------------------------------------
-
+// ------- NAVIGATION STATE -------
+// ------- Holds current route + helper utils -------
 @Stable
 class AppNavigationState(
     val navController: NavHostController,
     val currentRoute: String?
 ) {
-
-    // Needed by BottomNavigation (RESTORED!)
     val currentRouteName: String?
         get() = currentRoute
 
-    // Needed by BottomNavigation (RESTORED!)
-    fun isCurrentRoute(route: String): Boolean {
-        return currentRouteName == route
-    }
+    fun isCurrentRoute(route: String) = currentRouteName == route
 
-    // controls bottom navigation visibility
+    // Show bottom nav only on main pages
     val showBottomBar: Boolean
         get() = currentRoute in listOf(
-            "home",
-            "music",
-            "breathe",
-            "player",
-            "guided_meditate",
-            "guided_meditate_player",
-            "chatbot",
-            "settings"
+            "home", "music", "breathe", "player",
+            "guided_meditate", "guided_meditate_player",
+            "chatbot", "settings"
         )
 
-    // safe navigation
+    // Safe navigation
     fun navigateTo(route: String) {
         if (currentRouteName != route) {
             navController.navigate(route) {
@@ -107,20 +95,22 @@ class AppNavigationState(
     }
 }
 
+// ------- REMEMBER NAV STATE -------
+// ------- Observes route changes -------
 @Composable
 fun rememberAppNavigationState(
     navController: NavHostController = rememberNavController()
 ): AppNavigationState {
-
-    val currentBackstack by navController.currentBackStackEntryAsState()
-    val route = currentBackstack?.destination?.route
+    val backstack by navController.currentBackStackEntryAsState()
+    val route = backstack?.destination?.route
 
     return remember(navController, route) {
         AppNavigationState(navController, route)
     }
 }
 
-
+// ------- APP NAV HOST -------
+// ------- Entire navigation graph + onboarding logic -------
 @RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -129,16 +119,19 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
     val navigationState = rememberAppNavigationState()
     val hazeState = rememberHazeState()
 
-    // viewModels
+    // ------- ViewModels -------
     val chatViewModel: ChatViewModel = viewModel()
     val musicViewModel: TabViewModel = viewModel()
     val meditationViewModel: MeditationViewModel = viewModel()
     val homeViewModel: HomeViewModel = viewModel()
-    val settingsViewModel : SettingsViewModel = viewModel()
+    val settingsViewModel: SettingsViewModel = viewModel()
+
+    // ------- Onboarding State -------
     var isOnboardingInitialized by remember { mutableStateOf(false) }
     var isOnboardingCompleted by remember { mutableStateOf(false) }
     var showBottomNav by remember { mutableStateOf(false) }
 
+    // Load onboarding preference
     LaunchedEffect(Unit) {
         val completed = onboardingPreferences.isOnboardingCompleted()
         isOnboardingCompleted = completed
@@ -146,6 +139,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
         Log.d("AppNavHost", "Onboarding completed: $completed")
     }
 
+    // When onboarding finishes → go home
     val handleOnboardingComplete = {
         onboardingPreferences.setOnboardingCompleted(true)
         isOnboardingCompleted = true
@@ -154,23 +148,26 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
         }
     }
 
+    // Delay bottom nav reveal (smooth intro)
     LaunchedEffect(isOnboardingCompleted) {
         if (isOnboardingCompleted) {
             delay(1500)
             showBottomNav = true
-        } else {
-            showBottomNav = false
-        }
+        } else showBottomNav = false
     }
 
+    // Prevent drawing if not initialized
     if (!isOnboardingInitialized) return
 
     val startDestination = if (isOnboardingCompleted) "home" else "onboard"
 
+    // ------- MAIN UI SCAFFOLD -------
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp),
+
+        // ------- BOTTOM NAV BAR -------
         bottomBar = {
             AnimatedVisibility(
                 visible = navigationState.showBottomBar && showBottomNav,
@@ -193,7 +190,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                     animationSpec = tween(280)
                 ) + fadeOut()
             ) {
-                EnhancedBottomNavigation(
+                BottomNavigationBar(
                     navigation = navigationState,
                     hazeState = hazeState,
                     chatViewModel = chatViewModel
@@ -202,6 +199,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
         }
     ) { _ ->
 
+        // ------- NAV HOST GRAPH -------
         NavHost(
             navController = navigationState.navController,
             startDestination = startDestination,
@@ -210,7 +208,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 .hazeSource(state = hazeState)
         ) {
 
-            // --- Onboarding ---
+            // ------- ONBOARDING -------
             composable("onboard") {
                 OnboardingScreen(
                     navController = navigationState.navController,
@@ -218,6 +216,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 )
             }
 
+            // ------- HOME -------
             composable("home") {
                 HomeContent(
                     navController = navigationState.navController,
@@ -228,7 +227,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 )
             }
 
-            // --- Music ---
+            // ------- MUSIC -------
             composable("music") {
                 MusicScreen(
                     navController = navigationState.navController,
@@ -236,6 +235,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 )
             }
 
+            // ------- PLAYER -------
             composable("player") {
                 PlayerScreen(
                     navController = navigationState.navController,
@@ -243,11 +243,12 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 )
             }
 
-            // --- Meditation ---
+            // ------- BREATHING -------
             composable("breathe") {
-               BreatheScreen(navigationState.navController)
+                BreatheScreen(navigationState.navController)
             }
 
+            // ------- MEDITATION -------
             composable("guided_meditate") {
                 MeditationGuidedScreen(
                     navController = navigationState.navController,
@@ -261,12 +262,16 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                     viewModel = meditationViewModel
                 )
             }
-            composable("developer_page"){
-                DeveloperProfileScreen(navigationState.navController , settingsViewModel)
 
+            // ------- DEVELOPER PAGE -------
+            composable("developer_page") {
+                DeveloperProfileScreen(
+                    navigationState.navController,
+                    settingsViewModel
+                )
             }
 
-            // --- Chatbot ---
+            // ------- CHATBOT -------
             composable("chatbot") {
                 ChatBotScreen(
                     navController = navigationState.navController,
@@ -274,7 +279,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 )
             }
 
-            // --- SETTINGS ---
+            // ------- SETTINGS -------
             composable("settings") {
                 SettingsScreen(navController = navigationState.navController)
             }
@@ -283,10 +288,7 @@ fun AppNavHost(onboardingPreferences: OnboardingPreferences) {
                 CreditsScreen(navController = navigationState.navController)
             }
 
-
-
-
-            // --- Login placeholder ---
+            // ------- TEMP LOGIN -------
             composable("login_screen") {
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color.Black),

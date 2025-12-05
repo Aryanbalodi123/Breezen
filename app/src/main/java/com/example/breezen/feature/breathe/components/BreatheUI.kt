@@ -35,12 +35,12 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,20 +48,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.BrandGreen
+import com.example.breezen.core.ui.theme.CornerMedium
+import com.example.breezen.core.ui.theme.CornerSmall
+import com.example.breezen.core.ui.theme.CornerXLarge
 import com.example.breezen.core.ui.theme.SystemPause
 import com.example.breezen.core.ui.theme.SystemStop
+import com.example.breezen.core.ui.theme.TextPrimary
+import com.example.breezen.core.ui.theme.TextSecondary
+import com.example.breezen.core.ui.theme.WhiteAlpha03
+import com.example.breezen.core.ui.theme.WhiteAlpha06
+import com.example.breezen.core.ui.theme.WhiteAlpha12
 import com.example.breezen.feature.breathe.model.BreathingTechnique
 import com.example.breezen.feature.breathe.model.RingSpec
 import kotlinx.coroutines.delay
 
+// ------- Breathing direction text -------
+// ------- Purpose: show short guidance for current phase -------
 @Composable
-internal fun DirectionInstruction(
-    technique: BreathingTechnique, isPlaying: Boolean
+internal fun BreathingDirectionText(
+    technique: BreathingTechnique,
+    isPlaying: Boolean
 ) {
     var currentPhase by remember { mutableStateOf("Ready") }
 
@@ -72,164 +84,151 @@ internal fun DirectionInstruction(
         }
 
         val inhaleMillis = (technique.inhaleTime * 1000L).coerceAtLeast(1)
-        val holdMillis = (technique.holdTime * 1000L).coerceAtLeast(0)
+        val holdMillis = (technique.holdTime * 1000L)
         val exhaleMillis = (technique.exhaleTime * 1000L).coerceAtLeast(1)
-        val pauseMillis = (technique.pauseTime * 1000L).coerceAtLeast(0)
+        val pauseMillis = (technique.pauseTime * 1000L)
 
-        while (isPlaying) {
+        while (true) {
             currentPhase = "Inhale"
             delay(inhaleMillis)
-            if (!isPlaying) break
 
             if (technique.holdTime > 0) {
                 currentPhase = "Hold"
                 delay(holdMillis)
-                if (!isPlaying) break
             }
 
             currentPhase = "Exhale"
             delay(exhaleMillis)
-            if (!isPlaying) break
 
             if (technique.pauseTime > 0) {
                 currentPhase = "Pause"
                 delay(pauseMillis)
-                if (!isPlaying) break
             }
         }
     }
 
-    if (isPlaying) {
-        val directionText = when {
-            technique.name == "4-7-8 Breathing" && currentPhase == "Exhale" -> "Through mouth with 'whoosh' sound"
-            technique.name == "Double Inhale" && currentPhase == "Inhale" -> "Two quick inhales"
-            technique.name == "Double Inhale" && currentPhase == "Exhale" -> "Long slow exhale through mouth"
-            technique.name == "Bumblebee Breathing" && currentPhase == "Exhale" -> "Exhale with humming 'mmm' sound"
-            technique.name == "Alternate Nostril" -> "Switch nostrils each breath"
-            currentPhase == "Inhale" -> "Breathe in through nose"
-            currentPhase == "Exhale" -> "Breathe out through mouth"
-            currentPhase == "Hold" -> "Hold your breath gently"
-            currentPhase == "Pause" -> "Rest with empty lungs"
-            else -> ""
-        }
+    if (!isPlaying) return
 
-        if (directionText.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(.7f)
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            )
-                        ), RoundedCornerShape(24.dp)
-                    )
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                        RoundedCornerShape(24.dp)
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = directionText,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
+    val directionText = when {
+        technique.name == "4-7-8 Breathing" && currentPhase == "Exhale" ->
+            "Through mouth with 'whoosh' sound"
+        technique.name == "Double Inhale" && currentPhase == "Inhale" ->
+            "Two quick inhales"
+        technique.name == "Double Inhale" && currentPhase == "Exhale" ->
+            "Long slow exhale through mouth"
+        technique.name == "Bumblebee Breathing" && currentPhase == "Exhale" ->
+            "Exhale with humming 'mmm' sound"
+        technique.name == "Alternate Nostril" ->
+            "Switch nostrils each breath"
+        currentPhase == "Inhale" -> "Breathe in through nose"
+        currentPhase == "Exhale" -> "Breathe out through mouth"
+        currentPhase == "Hold" -> "Hold your breath gently"
+        currentPhase == "Pause" -> "Rest with empty lungs"
+        else -> ""
     }
-}
 
-@Composable
-internal fun BreathingAnimation(
-    technique: BreathingTechnique, isPlaying: Boolean, rings: List<RingSpec>
-) {
-    var currentPhase by remember { mutableStateOf("Ready") }
-    var currentRingIndex by remember { mutableStateOf(-1) }
-
-    LaunchedEffect(isPlaying, technique) {
-        if (!isPlaying) {
-            currentPhase = "Ready"
-            currentRingIndex = -1
-            return@LaunchedEffect
-        }
-
-        // Ensure phase times are not zero to avoid division errors
-        val inhaleMillis = (technique.inhaleTime * 1000L).coerceAtLeast(1)
-        val holdMillis = (technique.holdTime * 1000L).coerceAtLeast(0)
-        val exhaleMillis = (technique.exhaleTime * 1000L).coerceAtLeast(1)
-        val pauseMillis = (technique.pauseTime * 1000L).coerceAtLeast(0)
-
-        val inhaleStepMillis = (inhaleMillis / rings.size).coerceAtLeast(1)
-        val exhaleStepMillis = (exhaleMillis / rings.size).coerceAtLeast(1)
-
-        while (isPlaying) {
-            // Inhale phase
-            currentPhase = "Inhale"
-            for (i in rings.indices) {
-                if (!isPlaying) break
-                currentRingIndex = i
-                delay(inhaleStepMillis)
-            }
-            if (!isPlaying) break
-
-            // Hold phase
-            if (technique.holdTime > 0) {
-                currentPhase = "Hold"
-                delay(holdMillis)
-                if (!isPlaying) break
-            }
-
-            // Exhale phase
-            currentPhase = "Exhale"
-            for (i in rings.indices.reversed()) {
-                if (!isPlaying) break
-                currentRingIndex = i - 1
-                delay(exhaleStepMillis)
-            }
-            currentRingIndex = -1
-            if (!isPlaying) break
-
-            // Pause phase
-            if (technique.pauseTime > 0) {
-                currentPhase = "Pause"
-                delay(pauseMillis)
-                if (!isPlaying) break
-            }
-        }
-    }
+    if (directionText.isEmpty()) return
 
     Box(
-        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-    ) {
-        // Rings
-        rings.sortedByDescending { it.size }.forEachIndexed { index, ring ->
-            val isVisible = rings.indexOf(ring) <= currentRingIndex
-
-            AnimatedRing(
-                ringColor = ring.color, targetSize = ring.size, visible = isVisible && isPlaying
+        modifier = Modifier
+            .fillMaxWidth(.7f)
+            .background(
+                Brush.horizontalGradient(
+                    listOf(BrandGreen.copy(alpha = 0.30f), BrandGreen.copy(alpha = 0.20f))
+                ),
+                RoundedCornerShape(CornerMedium)
             )
-        }
-
+            .border(1.dp, BrandGreen.copy(alpha = 0.40f), RoundedCornerShape(CornerMedium))
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Text(
-            text = currentPhase.uppercase(),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (isPlaying) 1.0f else 0.5f),
+            text = directionText,
+            style = AppTypography.titleMedium.copy(fontSize = 16.sp),
+            color = TextPrimary,
             textAlign = TextAlign.Center
         )
     }
 }
 
+// ------- Breathing rings animation -------
+// ------- Purpose: animated rings representing breath phases -------
+@Composable
+internal fun BreathingRingsAnimation(
+    technique: BreathingTechnique,
+    isPlaying: Boolean,
+    rings: List<RingSpec>
+) {
+    var currentPhase by remember { mutableStateOf("Ready") }
+    var currentRingIndex by remember { mutableIntStateOf(-1) }
+
+    LaunchedEffect(isPlaying, technique) {
+        if (!isPlaying) {
+            currentPhase = "Ready"
+            currentRingIndex = -1
+            return@LaunchedEffect
+        }
+
+        val inhaleMillis = (technique.inhaleTime * 1000L).coerceAtLeast(1)
+        val holdMillis = (technique.holdTime * 1000L)
+        val exhaleMillis = (technique.exhaleTime * 1000L).coerceAtLeast(1)
+        val pauseMillis = (technique.pauseTime * 1000L)
+
+        val inhaleStep = (inhaleMillis / rings.size).coerceAtLeast(1)
+        val exhaleStep = (exhaleMillis / rings.size).coerceAtLeast(1)
+
+        while (true) {
+            currentPhase = "Inhale"
+            for (i in rings.indices) {
+                currentRingIndex = i
+                delay(inhaleStep)
+            }
+
+            if (technique.holdTime > 0) {
+                currentPhase = "Hold"
+                delay(holdMillis)
+            }
+
+            currentPhase = "Exhale"
+            for (i in rings.indices.reversed()) {
+                currentRingIndex = i - 1
+                delay(exhaleStep)
+            }
+            currentRingIndex = -1
+
+            if (technique.pauseTime > 0) {
+                currentPhase = "Pause"
+                delay(pauseMillis)
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        rings.sortedByDescending { it.size }.forEach { ring ->
+            val ringVisible = rings.indexOf(ring) <= currentRingIndex
+            BreathingAnimatedRing(
+                ringColor = ring.color,
+                targetSize = ring.size,
+                visible = ringVisible && isPlaying
+            )
+        }
+
+        Text(
+            text = currentPhase.uppercase(),
+            style = AppTypography.titleLarge.copy(fontSize = 20.sp),
+            color = TextPrimary.copy(alpha = if (isPlaying) 1f else 0.5f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+// ------- Breathing control card -------
+// ------- Purpose: timer, technique selector, and play controls -------
 @SuppressLint("DefaultLocale")
 @Composable
-internal fun EnhancedControlCard(
+internal fun BreathingControlCard(
     selectedTechnique: BreathingTechnique,
     remainingTime: Int,
-    totalSessionTime: Int,
     isPlaying: Boolean,
     onTechniqueClick: () -> Unit,
     onTimerClick: () -> Unit,
@@ -242,12 +241,12 @@ internal fun EnhancedControlCard(
 
     val animatedSeconds by animateIntAsState(
         targetValue = currentSeconds,
-        animationSpec = tween(durationMillis = 300, easing = EaseInOut), // Smoother animation
+        animationSpec = tween(300, easing = EaseInOut),
         label = "seconds"
     )
     val animatedMinutes by animateIntAsState(
         targetValue = currentMinutes,
-        animationSpec = tween(durationMillis = 300, easing = EaseInOut),
+        animationSpec = tween(300, easing = EaseInOut),
         label = "minutes"
     )
 
@@ -255,257 +254,182 @@ internal fun EnhancedControlCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
+        shape = RoundedCornerShape(CornerXLarge),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Box(
             modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface, // Use theme "surface"
-                    RoundedCornerShape(28.dp)
-                )
-                .border(
-                    1.5.dp,
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                    RoundedCornerShape(28.dp)
-                )
+                .background(WhiteAlpha03, RoundedCornerShape(CornerXLarge))
+                .border(1.dp, WhiteAlpha12, RoundedCornerShape(CornerXLarge))
                 .padding(16.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                // Timer section
-                Box(
+                // timer section
+                Column(
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(),
-                        ) { onTimerClick() }
-                        .padding(start = 10.dp)
+                            indication = ripple()
+                        ) { onTimerClick() },
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        // Second display
-                        Row(
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            Text(
-                                text = String.format("%02d", animatedSeconds),
-                                style = MaterialTheme.typography.displayLarge.copy(fontSize = 70.sp),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier
-                                    .alignByBaseline()
-                                    .align(Alignment.Top)
-                            )
-                            Text(
-                                text = "s",
-                                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .alignByBaseline()
-                                    .padding(start = 4.dp)
-                            )
-                        }
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = String.format("%02d", animatedSeconds),
+                            style = AppTypography.displayLarge.copy(fontSize = 70.sp),
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "s",
+                            style = AppTypography.bodyMedium.copy(fontSize = 18.sp),
+                            color = TextSecondary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
 
-                        // Minute display
-                        Row(
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            Text(
-                                text = String.format("%02d", animatedMinutes),
-                                style = MaterialTheme.typography.displayLarge.copy(fontSize = 70.sp),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier
-                                    .alignByBaseline()
-                                    .align(Alignment.Top)
-                            )
-                            Text(
-                                text = "m",
-                                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .alignByBaseline()
-                                    .padding(start = 4.dp)
-                            )
-                        }
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = String.format("%02d", animatedMinutes),
+                            style = AppTypography.displayLarge.copy(fontSize = 70.sp),
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "m",
+                            style = AppTypography.bodyMedium.copy(fontSize = 18.sp),
+                            color = TextSecondary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                 }
 
-                // Control section
+                // controls section
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    // Technique selector
+                    // technique selector
                     Card(
-                        modifier = Modifier.clickable(
+                        modifier = Modifier.fillMaxWidth().clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(),
+                            indication = ripple()
                         ) { onTechniqueClick() },
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f)
-                        ),
-                        shape = RoundedCornerShape(20.dp)
+                        colors = CardDefaults.cardColors(containerColor = WhiteAlpha12),
+                        shape = RoundedCornerShape(CornerMedium)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(10.dp)
-                        ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
                             Text(
                                 text = "Style",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                style = AppTypography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                color = TextPrimary
                             )
 
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .padding(top = 8.dp)
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
-                                        indication = ripple(),
+                                        indication = ripple()
                                     ) { onTechniqueClick() },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
-                                ),
-                                shape = RoundedCornerShape(10.dp)
+                                colors = CardDefaults.cardColors(containerColor = WhiteAlpha06),
+                                shape = RoundedCornerShape(CornerSmall)
                             ) {
                                 Text(
                                     text = selectedTechnique.name,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onBackground,
+                                    style = AppTypography.bodySmall,
+                                    color = TextPrimary,
                                     modifier = Modifier.padding(8.dp)
                                 )
                             }
                         }
                     }
 
-                    // Control buttons
+                    // play/pause/stop
                     if (!isPlaying) {
-                        // Full width start button
                         Card(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .fillMaxWidth()
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
-                                    indication = ripple(),
+                                    indication = ripple()
                                 ) { onStartClick() },
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color.Transparent
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(0.dp)
+                            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                            shape = RoundedCornerShape(CornerMedium)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
                                     .background(
                                         Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                                            )
+                                            listOf(BrandGreen.copy(alpha = 0.40f), BrandGreen.copy(alpha = 0.25f))
                                         ),
-                                        RoundedCornerShape(16.dp)
+                                        RoundedCornerShape(CornerMedium)
                                     )
-                                    .border(
-                                        1.dp,
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                                            )
-                                        ),
-                                        RoundedCornerShape(16.dp)
-                                    ),
+                                    .border(1.dp, BrandGreen.copy(alpha = 0.40f), RoundedCornerShape(CornerMedium))
+                                    .fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
-                                        imageVector = Icons.Default.PlayArrow,
+                                        Icons.Default.PlayArrow,
                                         contentDescription = "Start",
-                                        tint = MaterialTheme.colorScheme.onBackground,
+                                        tint = TextPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "Start",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onBackground
+                                        style = AppTypography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                        color = TextPrimary
                                     )
                                 }
                             }
                         }
                     } else {
-                        // Two buttons when playing
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            // Pause button (Uses SystemPause color)
+                            // pause
                             Card(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .weight(1f)
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
-                                        indication = ripple(),
+                                        indication = ripple()
                                     ) { onPauseClick() },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color.Transparent
-                                ),
-                                shape = RoundedCornerShape(16.dp),
-                                elevation = CardDefaults.cardElevation(0.dp)
+                                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                                shape = RoundedCornerShape(CornerMedium)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxSize()
                                         .background(
                                             Brush.linearGradient(
-                                                colors = listOf(
-                                                    SystemPause.copy(alpha = 0.3f),
-                                                    SystemPause.copy(alpha = 0.1f)
-                                                )
+                                                listOf(SystemPause.copy(alpha = 0.30f), SystemPause.copy(alpha = 0.15f))
                                             ),
-                                            RoundedCornerShape(16.dp)
+                                            RoundedCornerShape(CornerMedium)
                                         )
-                                        .border(
-                                            1.dp,
-                                            Brush.linearGradient(
-                                                colors = listOf(
-                                                    SystemPause.copy(alpha = 0.4f),
-                                                    SystemPause.copy(alpha = 0.2f)
-                                                )
-                                            ),
-                                            RoundedCornerShape(16.dp)
-                                        ),
+                                        .border(1.dp, SystemPause.copy(alpha = 0.40f), RoundedCornerShape(CornerMedium))
+                                        .fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Pause,
+                                        Icons.Default.Pause,
                                         contentDescription = "Pause",
-                                        tint = MaterialTheme.colorScheme.onBackground,
+                                        tint = TextPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
 
-                            // Stop button (Uses SystemStop color)
+                            // stop
                             Card(
                                 modifier = Modifier
                                     .fillMaxHeight()
@@ -514,40 +438,25 @@ internal fun EnhancedControlCard(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = ripple()
                                     ) { onStopClick() },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color.Transparent
-                                ),
-                                shape = RoundedCornerShape(16.dp),
-                                elevation = CardDefaults.cardElevation(0.dp)
+                                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                                shape = RoundedCornerShape(CornerMedium)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxSize()
                                         .background(
                                             Brush.linearGradient(
-                                                colors = listOf(
-                                                    SystemStop.copy(alpha = 0.3f),
-                                                    SystemStop.copy(alpha = 0.1f)
-                                                )
+                                                listOf(SystemStop.copy(alpha = 0.30f), SystemStop.copy(alpha = 0.15f))
                                             ),
-                                            RoundedCornerShape(16.dp)
+                                            RoundedCornerShape(CornerMedium)
                                         )
-                                        .border(
-                                            1.dp,
-                                            Brush.linearGradient(
-                                                colors = listOf(
-                                                    SystemStop.copy(alpha = 0.4f),
-                                                    SystemStop.copy(alpha = 0.2f)
-                                                )
-                                            ),
-                                            RoundedCornerShape(16.dp)
-                                        ),
+                                        .border(1.dp, SystemStop.copy(alpha = 0.40f), RoundedCornerShape(CornerMedium))
+                                        .fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Stop,
+                                        Icons.Default.Stop,
                                         contentDescription = "Stop",
-                                        tint = MaterialTheme.colorScheme.onBackground,
+                                        tint = TextPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -560,27 +469,36 @@ internal fun EnhancedControlCard(
     }
 }
 
+// ------- small animated ring -------
+// ------- Purpose: used by BreathingRingsAnimation -------
 @Composable
-internal fun AnimatedRing(
-    ringColor: Color, targetSize: Dp, visible: Boolean
+internal fun BreathingAnimatedRing(
+    ringColor: Color,
+    targetSize: Dp,
+    visible: Boolean
 ) {
     val animatedSize by animateDpAsState(
-        targetValue = if (visible) targetSize else 0.dp, animationSpec = tween(
-            durationMillis = 600, easing = FastOutSlowInEasing
-        ), label = "ring_animation"
+        targetValue = if (visible) targetSize else 0.dp,
+        animationSpec = tween(600, easing = FastOutSlowInEasing),
+        label = "ring_anim"
     )
 
-    val glowAnimation by rememberInfiniteTransition(label = "glow").animateFloat(
-        initialValue = 0.7f, targetValue = 1f, animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EaseInOut), repeatMode = RepeatMode.Reverse
-        ), label = "glow"
+    val glow by rememberInfiniteTransition(label = "glow").animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween(1500, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow_value"
     )
 
     Box(
         modifier = Modifier
             .size(animatedSize)
             .background(
-                ringColor.copy(alpha = ringColor.alpha * glowAnimation), shape = CircleShape
+                ringColor.copy(alpha = ringColor.alpha * glow),
+                CircleShape
             )
     )
 }

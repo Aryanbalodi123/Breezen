@@ -19,9 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.AppWhite
 import com.example.breezen.core.ui.theme.BrandGreen
 import com.example.breezen.core.ui.theme.BrandGreenBright
-import com.example.breezen.core.ui.theme.GlassBackground
+import com.example.breezen.core.ui.theme.CornerMedium
 
 @Composable
 fun SuccessToast(
@@ -40,12 +41,12 @@ fun SuccessToast(
             contentAlignment = Alignment.BottomCenter
         ) {
             Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = GlassBackground,
+                shape = RoundedCornerShape(CornerMedium),
+                color = AppWhite,
                 tonalElevation = 2.dp,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(18.dp))
-                    .border(1.dp, BrandGreen, RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(CornerMedium))
+                    .border(1.dp, BrandGreen, RoundedCornerShape(CornerMedium))
             ) {
                 Box(modifier = Modifier.padding(14.dp)) {
                     Text(

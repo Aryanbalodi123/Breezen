@@ -3,8 +3,9 @@ package com.example.breezen.feature.chatbot
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,17 +19,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.breezen.feature.chatbot.components.APP_BACKGROUND
+import com.example.breezen.R
+import com.example.breezen.core.ui.theme.DarkGreen
 import com.example.breezen.feature.chatbot.components.EmptyStateLarge
 import com.example.breezen.feature.chatbot.components.LoadingBubble
 import com.example.breezen.feature.chatbot.components.MessageBubble
 import com.example.breezen.feature.chatbot.components.TopHeader
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -39,72 +46,105 @@ fun ChatBotScreen(
     val messages = viewModel.messages
     val loading by viewModel.loading.collectAsState()
     val listState = rememberLazyListState()
+    val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
-    val count = viewModel.dailySessionCount
+    val dailyCount = viewModel.dailySessionCount
 
+    // Shared haze instance for all bubbles
+    val hazeState = remember { HazeState() }
+
+    // Auto-scroll on new message
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.lastIndex)
+        }
     }
 
     Scaffold(
-        containerColor = APP_BACKGROUND,
+        containerColor = DarkGreen,
         topBar = {
             TopHeader(
-                dailyCount = count,
+                dailyCount = dailyCount,
                 onNewChatClicked = { viewModel.clearChat() },
                 navController = navController
             )
         }
     ) { paddingValues ->
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(APP_BACKGROUND)
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
 
-            LazyColumn(
-                state = listState,
+            Image(
+                painter = painterResource(id = R.drawable.chatbot_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                    .fillMaxSize()
+                    .haze(hazeState)
+            )
+
+            // ---------------------------
+            // FOREGROUND CONTENT
+            // ---------------------------
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
 
-                if (messages.isEmpty() && !loading) {
-                    item {
-                        EmptyStateLarge {
-                            viewModel.sendMessage(it)
-                        }
-                    }
-                }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                ) {
 
-                itemsIndexed(messages) { _, (sender, message) ->
-                    MessageBubble(
-                        message = message,
-                        sender = sender,
-                        onCopy = {
-                            clipboardManager.setText(AnnotatedString(it))
-                        },
-                        onShare = {
-                            val intent = Intent(Intent.ACTION_SEND)
-                            intent.putExtra(Intent.EXTRA_TEXT, it)
-                            intent.type = "text/plain"
-                            context.startActivity(Intent.createChooser(intent, "Share via"))
-                        },
-                        onRegenerate = {
-                            messages.lastOrNull { pair -> pair.first == "USER" }?.second?.let {
-                                viewModel.sendMessage(it)
+                    // Empty State
+                    if (messages.isEmpty() && !loading) {
+                        item {
+                            EmptyStateLarge { userPrompt ->
+                                viewModel.sendMessage(userPrompt)
                             }
                         }
-                    )
-                }
+                    }
 
-                if (loading) item { LoadingBubble() }
+                    // Messages
+                    itemsIndexed(messages) { index, (sender, message) ->
+
+                        // Check if this is the very last message in the list
+                        val isLast = index == messages.lastIndex
+
+                        MessageBubble(
+                            message = message,
+                            sender = sender,
+                            isLastMessage = isLast,
+                            hazeState = hazeState,
+                            onCopy = {
+                                clipboard.setText(AnnotatedString(it))
+                            },
+                            onShare = {
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    putExtra(Intent.EXTRA_TEXT, it)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(
+                                    Intent.createChooser(shareIntent, "Share via")
+                                )
+                            },
+                            onRegenerate = {
+                                val lastUserMsg =
+                                    messages.lastOrNull { it.first == "USER" }?.second
+                                if (lastUserMsg != null) viewModel.sendMessage(lastUserMsg)
+                            }
+                        )
+                    }
+
+                    if (loading) {
+                        item { LoadingBubble() }
+                    }
+                }
             }
         }
     }

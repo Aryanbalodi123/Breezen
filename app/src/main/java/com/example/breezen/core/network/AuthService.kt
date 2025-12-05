@@ -17,7 +17,7 @@ data class User(val username: String, val email: String? = null)
 
 object AuthService {
 
-    // Assuming these constants are defined in your project
+    // ------- Supabase Client -------
     val client = createSupabaseClient(
         supabaseUrl = SUPABASE_URL_AUTH,
         supabaseKey = SUPABASE_API_KEY_ANON
@@ -54,6 +54,8 @@ object AuthService {
         }
     }
 
+    // ------- Important: Wait until Supabase session initializes -------
+    // Needed to avoid reading a null/incomplete user session
     suspend fun getCurrentUser(): User? {
         return try {
             client.auth.sessionStatus.first { status ->
@@ -66,36 +68,13 @@ object AuthService {
                 ?.jsonPrimitive
                 ?.content ?: "Breeze User"
 
-            val email = user.email
-
-            User(username, email)
+            User(username, user.email)
 
         } catch (e: Exception) {
             Log.e("AuthService", "Error getting current user", e)
             null
         }
     }
-
-//    suspend fun updateProfile(username: String?, email: String?) {
-//        try {
-//            // Replaced modifyUser with updateUser
-//            client.auth.updateUser {
-//                if (!email.isNullOrBlank()) {
-//                    this.email = email
-//                }
-//                // Update metadata for username
-//                if (!username.isNullOrBlank()) {
-//                    this.data = buildJsonObject {
-//                        put("username", username)
-//                    }
-//                }
-//            }
-//            Log.d("AuthService", "Profile updated successfully")
-//        } catch (e: Exception) {
-//            Log.e("AuthService", "Failed to update profile", e)
-//            throw e
-//        }
-//    }
 
     suspend fun logout() {
         try {

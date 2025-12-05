@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -53,22 +52,28 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
 import com.example.breezen.R
+import com.example.breezen.core.ui.theme.AppBlack
 import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
+import com.example.breezen.core.ui.theme.TextPrimary
+import com.example.breezen.core.ui.theme.WhiteAlpha20
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @Composable
-fun MeditationPlayer(navController: NavController, viewModel: MeditationViewModel) {
-
+fun MeditationPlayer(
+    navController: NavController,
+    viewModel: MeditationViewModel
+) {
     val context = LocalContext.current
+
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var currentPosition by remember { mutableLongStateOf(0L) }
     var totalDuration by remember { mutableLongStateOf(1L) }
 
-    // Initialize ExoPlayer
+    // Initialize and release ExoPlayer with this composable's lifecycle
     DisposableEffect(Unit) {
         val exo = ExoPlayer.Builder(context).build().apply {
             val item = MediaItem.fromUri(viewModel.currentSongUrl)
@@ -85,15 +90,20 @@ fun MeditationPlayer(navController: NavController, viewModel: MeditationViewMode
                         totalDuration = exo.duration.coerceAtLeast(1L)
                         isLoading = false
                     }
+
                     Player.STATE_BUFFERING -> isLoading = true
-                    Player.STATE_ENDED, Player.STATE_IDLE -> isLoading = false
+                    Player.STATE_ENDED,
+                    Player.STATE_IDLE -> isLoading = false
                 }
             }
+
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
             }
         }
+
         exo.addListener(listener)
+
         onDispose {
             exo.removeListener(listener)
             exo.release()
@@ -101,7 +111,7 @@ fun MeditationPlayer(navController: NavController, viewModel: MeditationViewMode
         }
     }
 
-    // Handle Song Changes
+    // Restart playback when the current song URL changes
     LaunchedEffect(viewModel.currentSongUrl) {
         player?.apply {
             setMediaItem(MediaItem.fromUri(viewModel.currentSongUrl))
@@ -110,29 +120,41 @@ fun MeditationPlayer(navController: NavController, viewModel: MeditationViewMode
         }
     }
 
-    // Update Progress Loop
+    // Poll player position while this composable is active to update progress
     LaunchedEffect(Unit) {
         while (isActive) {
             player?.let { p ->
                 currentPosition = p.currentPosition
-                if (p.duration > 0) totalDuration = p.duration
+                if (p.duration > 0) {
+                    totalDuration = p.duration
+                }
                 isPlaying = p.isPlaying
             }
             delay(50)
         }
     }
 
-    val progress = if (totalDuration > 0) (currentPosition.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
+    val progress = if (totalDuration > 0) {
+        (currentPosition.toFloat() / totalDuration).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
 
     Box(
-        Modifier.fillMaxSize().background(Color.Black).padding(10.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppBlack)
+            .padding(10.dp)
     ) {
         Column(
-            Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             MeditationTopCard(
-                Modifier.fillMaxWidth().weight(1f).padding(4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(4.dp),
                 title = viewModel.passedTitle,
                 subtitle = viewModel.passedSubTitle,
                 vectorRes = viewModel.passedVectorRes,
@@ -142,18 +164,16 @@ fun MeditationPlayer(navController: NavController, viewModel: MeditationViewMode
             )
 
             MeditationControlButtons(
-                Modifier.fillMaxWidth().padding(4.dp),
-                viewModel,
-                isPlaying,
-                isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                viewModel = viewModel,
+                isPlaying = isPlaying,
+                isLoading = isLoading,
                 onPlayPause = {
-                    player?.let { p -> if (p.isPlaying) p.pause() else p.play() }
-                },
-                onRewind = {
-                    player?.let { p -> p.seekTo((p.currentPosition - 10000).coerceAtLeast(0)) }
-                },
-                onForward = {
-                    player?.let { p -> p.seekTo((p.currentPosition + 10000).coerceAtMost(p.duration)) }
+                    player?.let { p ->
+                        if (p.isPlaying) p.pause() else p.play()
+                    }
                 }
             )
 
@@ -165,11 +185,13 @@ fun MeditationPlayer(navController: NavController, viewModel: MeditationViewMode
                 onSeek = { fraction ->
                     player?.let { p ->
                         if (p.duration > 0) {
-                            p.seekTo((p.duration * fraction).toLong().coerceIn(0, p.duration))
+                            val seekPos = (p.duration * fraction).toLong().coerceIn(0, p.duration)
+                            p.seekTo(seekPos)
                         }
                     }
                 }
             )
+
             Spacer(Modifier.height(100.dp))
         }
     }
@@ -192,22 +214,52 @@ fun MeditationTopCard(
             .border(1.dp, viewModel.GlassBorder, RoundedCornerShape(24.dp))
             .padding(16.dp)
     ) {
-        Text(text = title, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FunnelDisplayFamily, color = Color.White)
-        Text(text = subtitle, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FunnelDisplayFamily, color = Color.White)
+        Text(
+            text = title,
+            fontSize = 40.dp.value.sp,
+            fontWeight = FontWeight.ExtraBold,
+            fontFamily = FunnelDisplayFamily,
+            color = TextPrimary
+        )
 
-        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+        Text(
+            text = subtitle,
+            fontSize = 40.dp.value.sp,
+            fontWeight = FontWeight.ExtraBold,
+            fontFamily = FunnelDisplayFamily,
+            color = TextPrimary
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
             Image(
-                painterResource(vectorRes),
-                null,
-                Modifier.fillMaxSize(),
+                painter = painterResource(vectorRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
                 colorFilter = ColorFilter.tint(viewModel.passedColor)
             )
         }
 
         Row {
-            Text(viewModel.formatTime(currentPosition), style = AppTypography.headlineLarge, fontFamily = FunnelDisplayFamily, color = Color.White.copy(.5f))
+            Text(
+                text = viewModel.formatTime(currentPosition),
+                style = AppTypography.headlineLarge.copy(
+                    fontFamily = FunnelDisplayFamily,
+                    color = TextPrimary.copy(alpha = 0.5f)
+                )
+            )
             Spacer(Modifier.weight(1f))
-            Text(viewModel.formatTime(totalDuration), style = AppTypography.headlineLarge, fontFamily = FunnelDisplayFamily, color = Color.White)
+            Text(
+                text = viewModel.formatTime(totalDuration),
+                style = AppTypography.headlineLarge.copy(
+                    fontFamily = FunnelDisplayFamily,
+                    color = TextPrimary
+                )
+            )
         }
     }
 }
@@ -218,29 +270,24 @@ fun MeditationControlButtons(
     viewModel: MeditationViewModel,
     isPlaying: Boolean,
     isLoading: Boolean,
-    onPlayPause: () -> Unit,
-    // You don't strictly need onRewind/onForward here anymore if you only want Skip
-    onRewind: () -> Unit,
-    onForward: () -> Unit
+    onPlayPause: () -> Unit
 ) {
     Row(
-        modifier,
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-
-        // --- PLAY/PAUSE BUTTON ---
         if (isLoading) {
             LoadingButton(viewModel)
         } else {
             ControlButton(
-                if (isPlaying) R.drawable.pause else R.drawable.play,
-                viewModel,
+                iconRes = if (isPlaying) R.drawable.pause else R.drawable.play,
+                viewModel = viewModel,
                 enabled = true
             ) {
                 onPlayPause()
             }
         }
-        // --- PREVIOUS BUTTON ---
+
         ControlButton(
             iconRes = R.drawable.music_previous,
             viewModel = viewModel,
@@ -249,9 +296,6 @@ fun MeditationControlButtons(
             viewModel.skipToPrevious()
         }
 
-
-
-        // --- NEXT BUTTON ---
         ControlButton(
             iconRes = R.drawable.music_next,
             viewModel = viewModel,
@@ -263,9 +307,14 @@ fun MeditationControlButtons(
 }
 
 @Composable
-fun RowScope.ControlButton(iconRes: Int, viewModel: MeditationViewModel, enabled: Boolean = true, onClick: () -> Unit) {
+fun RowScope.ControlButton(
+    iconRes: Int,
+    viewModel: MeditationViewModel,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     Box(
-        Modifier
+        modifier = Modifier
             .weight(1f)
             .aspectRatio(1f)
             .clip(RoundedCornerShape(20.dp))
@@ -276,17 +325,21 @@ fun RowScope.ControlButton(iconRes: Int, viewModel: MeditationViewModel, enabled
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            painterResource(iconRes),
-            null,
-            tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f),
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = if (enabled) TextPrimary else TextPrimary.copy(alpha = 0.3f),
             modifier = Modifier.size(40.dp)
         )
     }
 }
 
 @Composable
-fun RowScope.LoadingButton(viewModel: MeditationViewModel) {
+fun RowScope.LoadingButton(
+    viewModel: MeditationViewModel
+) {
     var rotation by remember { mutableFloatStateOf(0f) }
+
+    // Simple rotation loop used for the loading indicator
     LaunchedEffect(Unit) {
         while (isActive) {
             rotation += 10f
@@ -294,8 +347,9 @@ fun RowScope.LoadingButton(viewModel: MeditationViewModel) {
             delay(16)
         }
     }
+
     Box(
-        Modifier
+        modifier = Modifier
             .weight(1f)
             .aspectRatio(1f)
             .clip(RoundedCornerShape(20.dp))
@@ -304,10 +358,29 @@ fun RowScope.LoadingButton(viewModel: MeditationViewModel) {
             .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(40.dp)) {
+        Canvas(
+            modifier = Modifier.size(40.dp)
+        ) {
             val strokeWidth = 4.dp.toPx()
-            drawArc(color = Color.White.copy(alpha = 0.3f), startAngle = 0f, sweepAngle = 360f, useCenter = false, style = Stroke(strokeWidth))
-            drawArc(color = Color.White, startAngle = rotation, sweepAngle = 90f, useCenter = false, style = Stroke(strokeWidth, cap = StrokeCap.Round))
+
+            drawArc(
+                color = WhiteAlpha20,
+                startAngle = 0f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(strokeWidth)
+            )
+
+            drawArc(
+                color = TextPrimary,
+                startAngle = rotation,
+                sweepAngle = 90f,
+                useCenter = false,
+                style = Stroke(
+                    width = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+            )
         }
     }
 }
@@ -331,30 +404,57 @@ fun MeditationRuler(
             .clip(RoundedCornerShape(8.dp))
             .onGloballyPositioned { widthPx = it.size.width.toFloat() }
             .pointerInput(Unit) {
-                detectTapGestures { offset -> if (widthPx > 0 && totalDuration > 0) onSeek((offset.x / widthPx).coerceIn(0f, 1f)) }
+                detectTapGestures { offset ->
+                    if (widthPx > 0 && totalDuration > 0) {
+                        onSeek((offset.x / widthPx).coerceIn(0f, 1f))
+                    }
+                }
             }
             .pointerInput(Unit) {
-                detectHorizontalDragGestures { change, _ -> if (widthPx > 0 && totalDuration > 0) onSeek((change.position.x / widthPx).coerceIn(0f, 1f)) }
+                detectHorizontalDragGestures { change, _ ->
+                    if (widthPx > 0 && totalDuration > 0) {
+                        onSeek((change.position.x / widthPx).coerceIn(0f, 1f))
+                    }
+                }
             },
         contentAlignment = Alignment.CenterStart
     ) {
         Row(
-            Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(tickCount) { i ->
-                val tickFraction = if (tickCount > 1) i / (tickCount - 1).toFloat() else 0f
+                val tickFraction =
+                    if (tickCount > 1) i / (tickCount - 1).toFloat() else 0f
                 val passed = tickFraction <= progress
-                val color = if (passed) viewModel.passedColor.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.3f)
-                val h = if (i % 5 == 0) 30.dp else 15.dp
-                Box(Modifier.width(2.dp).height(h).background(color, RoundedCornerShape(50)))
+                val color = if (passed) {
+                    viewModel.passedColor.copy(alpha = 0.9f)
+                } else {
+                    WhiteAlpha20
+                }
+                val height = if (i % 5 == 0) 30.dp else 15.dp
+
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(height)
+                        .background(color, RoundedCornerShape(50))
+                )
             }
         }
+
         if (widthPx > 0) {
             val cursorOffset = widthPx * progress
             val cursorDp = with(density) { cursorOffset.toDp() }
-            Box(Modifier.offset(x = cursorDp - 2.dp).width(4.dp).height(50.dp).background(viewModel.passedColor, RoundedCornerShape(16.dp)))
+
+            Box(
+                modifier = Modifier
+                    .offset(x = cursorDp - 2.dp)
+                    .width(4.dp)
+                    .height(50.dp)
+                    .background(viewModel.passedColor, RoundedCornerShape(16.dp))
+            )
         }
     }
 }

@@ -11,7 +11,6 @@ import com.example.breezen.core.network.User
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
-// Change to AndroidViewModel to get 'application' context
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _user = mutableStateOf<User?>(null)
@@ -21,25 +20,30 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         loadUser()
     }
 
+    /**
+     * Loads username from DataStore, then optionally syncs with Supabase.
+     * Keeps UI responsive even if network check fails.
+     */
     private fun loadUser() {
         viewModelScope.launch {
 
+            // Local username (fast load)
             val localName = UserPreferences.getUsername(getApplication()).firstOrNull()
             if (!localName.isNullOrEmpty()) {
                 _user.value = User(localName)
             }
 
-            // STEP 2: Background Check (Optional)
-            // You can still check Supabase to ensure session is valid or update the name
+            // Remote profile sync (non-blocking, optional)
             try {
                 val remoteUser = AuthService.getCurrentUser()
+
                 if (remoteUser != null && remoteUser.username != localName) {
-                    // If remote name is different, update UI and DataStore
                     _user.value = remoteUser
                     UserPreferences.saveUsername(getApplication(), remoteUser.username)
                 }
-            } catch (e: Exception) {
-                // If Supabase fails, we still have the localName displayed!
+
+            } catch (_: Exception) {
+                // Silent fallback — UI still works with local data
             }
         }
     }

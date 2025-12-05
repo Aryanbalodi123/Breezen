@@ -1,12 +1,12 @@
 package com.example.breezen
 
-import NoInternet
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import com.example.breezen.core.data.OnboardingPreferences
+import com.example.breezen.core.ui.components.NoInternet
 import com.example.breezen.core.ui.navigation.AppNavHost
 import com.example.breezen.core.ui.theme.BreezenTheme
 import com.example.breezen.core.ui.util.isInternetAvailable
@@ -31,6 +32,7 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     private lateinit var onboardingPreferences: OnboardingPreferences
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         // 1. Enable Edge to Edge BEFORE super.onCreate
         enableEdgeToEdge()

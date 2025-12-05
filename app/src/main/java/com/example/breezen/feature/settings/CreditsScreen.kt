@@ -26,14 +26,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.breezen.core.ui.theme.AppBlack
 import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.AppWhite
-import com.example.breezen.core.ui.theme.GlassBackground
-import com.example.breezen.core.ui.theme.GlassBorder
 import com.example.breezen.core.ui.theme.TextSecondary
+import com.example.breezen.core.ui.theme.WhiteAlpha05
+import com.example.breezen.core.ui.theme.WhiteAlpha10
 import com.example.breezen.core.ui.theme.pastelColors
 
 data class CreditItem(val title: String, val author: String, val type: String)
@@ -56,7 +57,13 @@ fun CreditsScreen(navController: NavController) {
             .padding(20.dp)
     ) {
         Spacer(Modifier.height(8.dp))
-        Text("Vibes & Creators.", style = AppTypography.displayLarge, color = AppWhite)
+
+        Text(
+            text = "Vibes & Creators.",
+            style = AppTypography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = AppWhite
+        )
+
         Spacer(Modifier.height(12.dp))
 
         LazyColumn(
@@ -76,11 +83,13 @@ fun ColorfulCreditCard(item: CreditItem, accent: Color) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(GlassBackground)
-            .border(1.dp, GlassBorder, RoundedCornerShape(18.dp))
+            .background(WhiteAlpha05)
+            .border(1.dp, WhiteAlpha10, RoundedCornerShape(18.dp))
             .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+
+            // Icon container
             Box(
                 modifier = Modifier
                     .size(46.dp)
@@ -93,16 +102,31 @@ fun ColorfulCreditCard(item: CreditItem, accent: Color) {
 
             Spacer(Modifier.width(12.dp))
 
+            // Details
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.title, style = AppTypography.titleMedium, color = AppWhite)
-                Text(item.author, style = AppTypography.bodySmall, color = TextSecondary)
+                Text(
+                    text = item.title,
+                    style = AppTypography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = AppWhite
+                )
+                Text(
+                    text = item.author,
+                    style = AppTypography.bodyMedium,
+                    color = TextSecondary
+                )
             }
 
-            Box(modifier = Modifier
-                .align(Alignment.CenterVertically)
-                .padding(6.dp)
+            // Tag
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(6.dp)
             ) {
-                Text(item.type, style = AppTypography.bodySmall, color = accent)
+                Text(
+                    text = item.type,
+                    style = AppTypography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = accent
+                )
             }
         }
     }

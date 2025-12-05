@@ -166,6 +166,7 @@ dependencies {
     implementation(libs.androidx.animation.core)
     implementation(libs.androidx.compose.ui)
     implementation(libs.places)
+    implementation(libs.androidx.compose.ui.text)
 
     // Testing
     testImplementation("junit:junit:4.13.2")

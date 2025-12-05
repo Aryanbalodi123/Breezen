@@ -1,5 +1,6 @@
 package com.example.breezen.feature.player
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -38,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -58,7 +59,6 @@ import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.breezen.core.network.IMAGE_BUCKET_URL
-import com.example.breezen.core.network.Song
 import com.example.breezen.core.ui.components.BackButton
 import com.example.breezen.core.ui.components.ShimmerBox
 import com.example.breezen.feature.music.PlayerLoadState
@@ -76,13 +76,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withTimeoutOrNull
 
 
-// Utility
+// Converts total milliseconds into separate minutes and seconds for formatting.
 fun minSec(duration: Long): List<Long> {
     val minutes = duration / 1000 / 60
     val seconds = (duration / 1000) % 60
     return listOf(minutes, seconds)
 }
 
+// Defines the set of user-initiated actions for media control.
 sealed class PlayerEvent {
     object PlayPause : PlayerEvent()
     object Previous : PlayerEvent()
@@ -92,6 +93,7 @@ sealed class PlayerEvent {
 }
 
 
+// Manages the audio player lifecycle, data synchronization, and overall screen orchestration.
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
@@ -118,6 +120,7 @@ fun PlayerScreen(
         label = "dominantColor"
     )
 
+    // Initializes and prepares the media source whenever the stream URL changes.
     LaunchedEffect(uiState.streamUrl) {
         if (uiState.streamUrl.isNotEmpty()) {
             isPlayerReady = false
@@ -142,6 +145,7 @@ fun PlayerScreen(
         }
     }
 
+    // Handles the player's play/pause state based on the Android lifecycle events.
     DisposableEffect(lifecycleOwner, player) {
         val obs = LifecycleEventObserver { _, event ->
             when (event) {
@@ -158,6 +162,7 @@ fun PlayerScreen(
         }
     }
 
+    // Attaches listeners to the player for state updates and polls the current playback position.
     LaunchedEffect(player) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -194,13 +199,14 @@ fun PlayerScreen(
         }
     }
 
+    // Asynchronously attempts to load the song image with a timeout safeguard.
     LaunchedEffect(currentSong?.id) {
         val id = currentSong?.id ?: return@LaunchedEffect
         isImageLoaded = false
 
         val success = withTimeoutOrNull(2000) {
             val request = ImageRequest.Builder(context)
-                .data(IMAGE_BUCKET_URL + id + ".webp")
+                .data("$IMAGE_BUCKET_URL$id.webp")
                 .build()
 
             context.imageLoader.execute(request)
@@ -215,6 +221,7 @@ fun PlayerScreen(
         )
     }
 
+    // Signals the view model that both audio and visual assets are ready for display.
     LaunchedEffect(isPlayerReady, isImageLoaded) {
         if (isPlayerReady && isImageLoaded) {
             viewModel.onPlayerReadyAndImageLoaded()
@@ -279,6 +286,8 @@ fun PlayerScreen(
     }
 }
 
+// Renders the visual interface components including progress, artwork, and controls.
+@SuppressLint("DefaultLocale")
 @Composable
 internal fun PlayerContent(
     modifier: Modifier = Modifier,
@@ -332,7 +341,7 @@ internal fun PlayerContent(
                 .padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-           BackButton(navController)
+            BackButton(navController)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -439,14 +448,14 @@ internal fun PlayerContent(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-            NextUpCard(hazeState = hazeState, nextUpSong = uiState.nextUpSong as Song?)
+            NextUpCard(hazeState = hazeState, nextUpSong = uiState.nextUpSong)
 
             Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
 
-// This is an artistic gradient based on the song color, so it stays.
+// Draws a custom gradient overlay to simulate lighting based on the dominant color.
 private fun DrawScope.drawSunshineEffect(dominantColor: Color, canvasSize: Size) {
     val lightSource = Offset(-canvasSize.width * 0.3f, -canvasSize.height * 0.2f)
     val mainGradient = Brush.linearGradient(

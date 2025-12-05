@@ -70,11 +70,11 @@ import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.AppWhite
 import com.example.breezen.core.ui.theme.BrandGreen
 import com.example.breezen.core.ui.theme.BrandGreenBright
-import com.example.breezen.core.ui.theme.GlassBackground
-import com.example.breezen.core.ui.theme.GlassBorder
 import com.example.breezen.core.ui.theme.SystemStop
 import com.example.breezen.core.ui.theme.SystemWarning
 import com.example.breezen.core.ui.theme.TextSecondary
+import com.example.breezen.core.ui.theme.WhiteAlpha05
+import com.example.breezen.core.ui.theme.WhiteAlpha10
 import kotlinx.coroutines.launch
 
 @Composable
@@ -110,7 +110,7 @@ fun ChangePasswordModal(
                 .padding(horizontal = 18.dp)
                 .clip(RoundedCornerShape(26.dp))
                 .background(AppBlack.copy(alpha = 0.95f))
-                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(26.dp))
+                .border(1.dp, WhiteAlpha10, RoundedCornerShape(26.dp))
                 .padding(26.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -141,7 +141,7 @@ fun ChangePasswordModal(
             Spacer(Modifier.height(22.dp))
 
             // INPUT FIELDS -------------------------------------------
-            FancyPasswordField(
+            PasswordField(
                 label = "Current Password",
                 value = oldPass,
                 onValueChange = { oldPass = it; errorMsg = null },
@@ -152,7 +152,7 @@ fun ChangePasswordModal(
 
             Spacer(Modifier.height(14.dp))
 
-            FancyPasswordField(
+            PasswordField(
                 label = "New Password",
                 value = newPass,
                 onValueChange = { newPass = it; errorMsg = null },
@@ -163,7 +163,7 @@ fun ChangePasswordModal(
 
             Spacer(Modifier.height(14.dp))
 
-            FancyPasswordField(
+            PasswordField(
                 label = "Confirm Password",
                 value = confirmPass,
                 onValueChange = { confirmPass = it; errorMsg = null },
@@ -180,7 +180,7 @@ fun ChangePasswordModal(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                EnhancedPasswordStrengthBar(strength, newPass)
+                PasswordStrengthBar(strength, newPass)
             }
 
             Spacer(Modifier.height(18.dp))
@@ -204,11 +204,13 @@ fun ChangePasswordModal(
                 SmallButton(
                     text = "Cancel",
                     bg = Color.Transparent,
-                    border = Color.White.copy(alpha = 0.2f),
+                    border = WhiteAlpha10,
                     textColor = AppWhite
                 ) {
                     onDismissRequest()
                 }
+
+                Spacer(modifier = Modifier.width(12.dp))
 
                 SmallButton(
                     text = "Update",
@@ -234,10 +236,8 @@ fun ChangePasswordModal(
     }
 }
 
-
-
 @Composable
-fun FancyPasswordField(
+fun PasswordField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -260,7 +260,7 @@ fun FancyPasswordField(
             .fillMaxWidth()
             .onFocusChanged { focused = it.isFocused }
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF111111))
+            .background(WhiteAlpha05)
             .border(
                 1.dp,
                 when {
@@ -301,6 +301,7 @@ fun FancyPasswordField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
     )
 }
+
 @Composable
 fun RowScope.SmallButton(
     text: String,
@@ -335,7 +336,6 @@ fun RowScope.SmallButton(
     }
 }
 
-
 @Composable
 fun ErrorCard(msg: String) {
     Box(
@@ -362,67 +362,8 @@ fun ErrorCard(msg: String) {
     }
 }
 
-
-
 @Composable
-fun EnhancedPasswordInputField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    show: Boolean,
-    onToggle: () -> Unit,
-    isError: Boolean = false
-) {
-    val borderColor = when {
-        isError -> SystemStop
-        value.isNotEmpty() -> BrandGreen
-        else -> GlassBorder
-    }
-
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = {
-            Text(
-                label,
-                color = if (isError) SystemStop else TextSecondary,
-                style = AppTypography.bodyMedium
-            )
-        },
-        singleLine = true,
-        visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
-        trailingIcon = {
-            IconButton(onClick = onToggle) {
-                Icon(
-                    imageVector = if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = if (show) "Hide password" else "Show password",
-                    tint = if (isError) SystemStop else TextSecondary
-                )
-            }
-        },
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = if (isError) SystemStop else BrandGreen,
-            unfocusedBorderColor = borderColor,
-            focusedContainerColor = GlassBackground.copy(alpha = 0.5f),
-            unfocusedContainerColor = GlassBackground.copy(alpha = 0.3f),
-            cursorColor = BrandGreen,
-            focusedLabelColor = if (isError) SystemStop else BrandGreen,
-            unfocusedLabelColor = if (isError) SystemStop else TextSecondary,
-            focusedTextColor = AppWhite,
-            unfocusedTextColor = AppWhite,
-            errorBorderColor = SystemStop,
-            errorLabelColor = SystemStop
-        ),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
-        isError = isError
-    )
-}
-
-@Composable
-fun EnhancedPasswordStrengthBar(strength: Float, password: String) {
+fun PasswordStrengthBar(strength: Float, password: String) {
     val animatedStrength by animateFloatAsState(
         targetValue = strength,
         animationSpec = spring(
@@ -487,7 +428,7 @@ fun EnhancedPasswordStrengthBar(strength: Float, password: String) {
                 .fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(GlassBorder.copy(alpha = 0.3f))
+                .background(WhiteAlpha05)
         ) {
             Box(
                 Modifier

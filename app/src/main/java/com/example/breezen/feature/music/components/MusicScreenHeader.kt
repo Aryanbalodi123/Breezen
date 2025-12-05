@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,23 +20,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.breezen.core.ui.components.BackButton
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.TextPrimary
 import kotlinx.coroutines.delay
 
 @Composable
 internal fun MusicScreenHeader(
     navController: NavController
 ) {
+    // State to track local interaction feedback
     var isPressed by remember { mutableStateOf(false) }
+
+    // Calculate scale animation based on press state
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f, animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium
-        ), label = "backButtonScale"
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "backButtonScale"
     )
 
+    // Fade-in animation for the header elements on entry
     val headerAlpha by animateFloatAsState(
         targetValue = 1f,
         animationSpec = tween(durationMillis = 600, delayMillis = 100),
@@ -52,18 +59,18 @@ internal fun MusicScreenHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-       BackButton(navController)
+        BackButton(navController)
 
         Text(
             text = "Music Library",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
+            style = AppTypography.titleLarge,
+            color = TextPrimary
         )
 
         Spacer(modifier = Modifier.size(48.dp))
     }
 
+    // Reset the pressed state automatically after a short delay
     LaunchedEffect(isPressed) {
         if (isPressed) {
             delay(100)

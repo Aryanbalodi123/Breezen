@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,14 +25,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.breezen.core.ui.theme.AppBlack
+import com.example.breezen.core.ui.theme.AppTypography
+import com.example.breezen.core.ui.theme.BrandGreenBright
+import com.example.breezen.core.ui.theme.BrandGreenDarker
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
+import com.example.breezen.core.ui.theme.TextPrimary
 import kotlinx.coroutines.delay
 
 @Composable
-fun AppHeader(username: String , navController: NavController) {
+fun AppHeader(
+    username: String,
+    navController: NavController
+) {
     var breezenText by remember { mutableStateOf("") }
 
-    // Typewriter effect animation
     LaunchedEffect(Unit) {
         "Breezen".forEach { char ->
             breezenText += char
@@ -42,38 +48,42 @@ fun AppHeader(username: String , navController: NavController) {
     }
 
     Row(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
-
+            .background(AppBlack)
             .padding(horizontal = 16.dp)
             .height(50.dp),
-
         verticalAlignment = Alignment.CenterVertically
     ) {
+
         Text(
-            breezenText,
-            color = MaterialTheme.colorScheme.onBackground,
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontFamily = FunnelDisplayFamily, // Apply creative font
+            text = breezenText,
+            color = TextPrimary,
+            style = AppTypography.titleLarge.copy(
+                fontFamily = FunnelDisplayFamily,
                 fontWeight = FontWeight.Normal,
                 letterSpacing = 1.sp,
                 fontSize = 32.sp
             )
         )
+
         Spacer(Modifier.weight(1f))
 
-        UserAvatar(username = username, navController)
+        UserAvatar(username = username, navController = navController)
     }
 }
 
 @Composable
-fun UserAvatar(username: String , navController: NavController) {
+fun UserAvatar(
+    username: String,
+    navController: NavController
+) {
     val initial = username.firstOrNull()?.uppercaseChar() ?: '?'
-    // This is an artistic choice, not a theme color, so it stays
+
     val gradientBrush = Brush.linearGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.primary
+            BrandGreenBright,
+            BrandGreenDarker
         )
     )
 
@@ -82,17 +92,15 @@ fun UserAvatar(username: String , navController: NavController) {
             .size(48.dp)
             .clip(CircleShape)
             .background(gradientBrush)
-            .clickable{
-                navController.navigate("settings")
-            },
+            .clickable { navController.navigate("settings") },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = initial.toString(),
-            color = MaterialTheme.colorScheme.onPrimary, // Use onPrimary
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+            color = AppBlack,
+            style = AppTypography.bodyLarge.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
             )
         )
     }

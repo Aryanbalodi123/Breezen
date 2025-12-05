@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
+// ------- ONBOARDING PREFERENCES -------
+// ------- Stores onboarding completion state -------
 class OnboardingPreferences(context: Context) {
+
     private val prefs: SharedPreferences =
         context.getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE)
 

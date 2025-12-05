@@ -27,9 +27,9 @@ import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import com.example.breezen.core.ui.theme.Prata
 import com.example.breezen.feature.meditation.components.CARD_WIDTH
 import com.example.breezen.feature.meditation.components.GuidedMeditationCardWithEffect
-import createGuidedMeditationData
+import com.example.breezen.feature.meditation.model.createGuidedMeditationData
 
-private val CARD_SPACING = (-80).dp
+
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
@@ -55,7 +55,6 @@ fun MeditationGuidedScreen(
             .padding(top = 48.dp, bottom = 40.dp)
     ) {
 
-        // ... (Header Text Section remains the same) ...
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Text("Explore", fontFamily = FunnelDisplayFamily, fontSize = 54.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Text("Peace", fontFamily = FunnelDisplayFamily, fontSize = 54.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(bottom = 8.dp))
@@ -65,7 +64,6 @@ fun MeditationGuidedScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // List
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,18 +71,18 @@ fun MeditationGuidedScreen(
             state = listState,
             flingBehavior = flingBehavior,
             contentPadding = PaddingValues(horizontal = contentPadding),
-            horizontalArrangement = Arrangement.spacedBy(CARD_SPACING)
+            horizontalArrangement = Arrangement.spacedBy((-80).dp)
         ) {
             items(8) { index ->
 
-                // Create data properly
+                // Create data 
                 val meditationData = createGuidedMeditationData(
                     viewModel = viewModel,
                     index = index
                 )
 
                 GuidedMeditationCardWithEffect(
-                    meditation = meditationData,   // ✔ Correct object
+                    meditation = meditationData, 
                     listState = listState,
                     index = index,
                     contentPaddingPx = with(LocalDensity.current) { contentPadding.toPx() },
