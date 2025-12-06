@@ -1,31 +1,72 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+###############################################
+##  BREEZEN – COMPLETE PROGUARD CONFIG (FINAL)
+###############################################
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
-
-# Keep the JNI wrapper
+########## KEEP JNI KEYS ##########
 -keep class com.example.breezen.core.network.Keys { *; }
 -dontwarn com.example.breezen.core.network.Keys
 
-# Keep things needed for reflection if any
+# Keep native method signatures
 -keepclassmembers class * {
     native <methods>;
 }
+
+###############################################
+## COMPOSE (required or release crashes)
+###############################################
+-dontwarn androidx.compose.**
+-keep class androidx.compose.** { *; }
+-keep class kotlin.coroutines.** { *; }
+
+###############################################
+## VIEWMODELS & LIFECYCLE
+###############################################
+-keep class androidx.lifecycle.** { *; }
+-keep class com.example.breezen.**ViewModel { *; }
+-keepclassmembers class com.example.breezen.**ViewModel { *; }
+
+###############################################
+## RETROFIT + OKHTTP
+###############################################
+# Retrofit
+-dontwarn retrofit2.Platform$Java8
+-dontwarn javax.annotation.**
+-keep class retrofit2.** { *; }
+
+# OkHttp & Okio
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
+-keep interface okhttp3.internal.publicsuffix.PublicSuffixDatabase
+
+###############################################
+## GSON – Keep data classes for JSON parsing
+###############################################
+-keep class com.google.gson.** { *; }
+-keep class com.example.breezen.** { *; }
+
+# Keep SerializedName fields
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+###############################################
+## COROUTINES
+###############################################
+-dontwarn kotlinx.coroutines.**
+-keep class kotlinx.coroutines.** { *; }
+
+###############################################
+## KEEP ANNOTATIONS (Retrofit, Gson, Compose require)
+###############################################
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses
+
+###############################################
+## OTHER COMMON SAFETY RULES
+###############################################
+# Prevent minification issues with reflection
+-dontwarn java.lang.invoke.*
+-keep class kotlin.Metadata { *; }

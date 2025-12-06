@@ -1,6 +1,9 @@
 package com.example.breezen.feature.breathe
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOutQuart
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -27,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.breezen.core.ui.components.BackButton
@@ -47,12 +51,53 @@ import com.example.breezen.feature.breathe.model.RingSpec
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun BreatheScreen(navController: NavController) {
 
     // Haze / blur state (used by dialogs to blur underlying content)
     val hazeState = rememberHazeState()
+
+    // Animation States for Entry
+    val animAlpha = remember { Animatable(0f) }
+    val animScale = remember { Animatable(0.92f) }
+    val animOffsetY = remember { Animatable(100f) } // Slide up distance in px (approx)
+    val animTopBarOffset = remember { Animatable(-50f) }
+
+    // Trigger Entry Animation
+    LaunchedEffect(Unit) {
+        // Parallel animations with slight staggers for "sleek" feel
+        launch {
+            animAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 800, easing = EaseOutQuart)
+            )
+        }
+        launch {
+            // Slight delay for center content bloom
+            delay(50)
+            animScale.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 800, easing = EaseOutQuart)
+            )
+        }
+        launch {
+            // Controls slide up
+            delay(100)
+            animOffsetY.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(durationMillis = 900, easing = EaseOutQuart)
+            )
+        }
+        launch {
+            // Top bar slide down
+            animTopBarOffset.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(durationMillis = 700, easing = EaseOutQuart)
+            )
+        }
+    }
 
     // rings use BrandGreen with decreasing alpha values (brand-based look)
     val rings = listOf(
@@ -95,18 +140,21 @@ fun BreatheScreen(navController: NavController) {
                 .hazeSource(hazeState) // mark content as blur-source
         ) {
             // Ambient lights (top-left and bottom-right)
-            AmbientLight(
-                color = BrandGreen.copy(alpha = 0.25f),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = 50.dp, start = 20.dp)
-            )
-            AmbientLight(
-                color = BrandGreen.copy(alpha = 0.18f),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 100.dp, end = 20.dp)
-            )
+            // Applied entry fade to background elements
+            Box(modifier = Modifier.graphicsLayer { alpha = animAlpha.value }) {
+                AmbientLight(
+                    color = BrandGreen.copy(alpha = 0.25f),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(top = 50.dp, start = 20.dp)
+                )
+                AmbientLight(
+                    color = BrandGreen.copy(alpha = 0.18f),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 100.dp, end = 20.dp)
+                )
+            }
 
             // Main UI column
             Column(
@@ -121,7 +169,11 @@ fun BreatheScreen(navController: NavController) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 16.dp)
+                        .graphicsLayer {
+                            translationY = animTopBarOffset.value
+                            alpha = animAlpha.value
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -140,10 +192,16 @@ fun BreatheScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // Center content (either intro text when idle, or animation when playing)
+                // Applied Scale + Fade Bloom Animation
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .graphicsLayer {
+                            scaleX = animScale.value
+                            scaleY = animScale.value
+                            alpha = animAlpha.value
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     if (!isPlaying) {
@@ -185,27 +243,39 @@ fun BreatheScreen(navController: NavController) {
                 }
 
                 // Direction / short instructions
-                Box(modifier = Modifier.padding(vertical = 10.dp)) {
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 10.dp)
+                        .graphicsLayer { alpha = animAlpha.value }
+                ) {
                     BreathingDirectionText(technique = selectedTechnique, isPlaying = isPlaying)
                 }
 
                 // Controls
-                BreathingControlCard(
-                    selectedTechnique = selectedTechnique,
-                    remainingTime = remainingTime,
-                    isPlaying = isPlaying,
-                    onTechniqueClick = { showTechniqueSelector = true },
-                    onTimerClick = { showTimerDialog = true },
-                    onStartClick = {
-                        if (remainingTime == 0) remainingTime = totalSessionTime
-                        isPlaying = true
-                    },
-                    onPauseClick = { isPlaying = false },
-                    onStopClick = {
-                        isPlaying = false
-                        remainingTime = totalSessionTime
+                // Applied Slide Up + Fade Animation
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        translationY = animOffsetY.value
+                        alpha = animAlpha.value
                     }
-                )
+                ) {
+                    BreathingControlCard(
+                        selectedTechnique = selectedTechnique,
+                        remainingTime = remainingTime,
+                        isPlaying = isPlaying,
+                        onTechniqueClick = { showTechniqueSelector = true },
+                        onTimerClick = { showTimerDialog = true },
+                        onStartClick = {
+                            if (remainingTime == 0) remainingTime = totalSessionTime
+                            isPlaying = true
+                        },
+                        onPauseClick = { isPlaying = false },
+                        onStopClick = {
+                            isPlaying = false
+                            remainingTime = totalSessionTime
+                        }
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(150.dp))
             }

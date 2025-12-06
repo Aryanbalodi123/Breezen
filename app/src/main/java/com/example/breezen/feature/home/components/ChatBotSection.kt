@@ -2,11 +2,18 @@ package com.example.breezen.feature.home.components
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -53,22 +61,31 @@ import com.example.breezen.core.ui.theme.WhiteAlpha08
 import com.example.breezen.core.ui.theme.WhiteAlpha12
 import com.example.breezen.feature.chatbot.ChatViewModel
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ChatBotSection(
     chatViewModel: ChatViewModel,
     navController: NavController
 ) {
-
     var input by remember { mutableStateOf("") }
     val keyboard = LocalSoftwareKeyboardController.current
+
+    // Rotation Animation
+    val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(30000, easing = LinearEasing)
+        ),
+        label = "rotation"
+    )
 
     Box(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .height(400.dp)
-            .clip(RoundedCornerShape(CornerLarge))       // Your corner shape
+            .height(320.dp)
+            .clip(RoundedCornerShape(CornerLarge))
             .background(AppBlack)
     ) {
 
@@ -79,18 +96,34 @@ fun ChatBotSection(
             modifier = Modifier.fillMaxSize()
         )
 
-        Text(
-            text = "How are you feeling today?",
-            color = TextPrimary.copy(alpha = 0.85f),
-            textAlign = TextAlign.Center,
-
-            style = AppTypography.displayLarge,
-            fontFamily = FunnelDisplayFamily,
+        // Text Section
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 26.dp)
-        )
+                .padding(top = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "How are you feeling?",
+                color = TextPrimary.copy(alpha = 0.95f),
+                textAlign = TextAlign.Center,
+                style = AppTypography.headlineLarge,
+                fontFamily = FunnelDisplayFamily
+            )
 
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Subtext - More personal and meditative
+            Text(
+                text = "I'm here to listen and help you find clarity.",
+                color = TextPrimary.copy(alpha = 0.65f),
+                textAlign = TextAlign.Center,
+                style = AppTypography.bodyMedium,
+                fontFamily = DMSansFontFamily
+            )
+        }
+
+        // Rotating Central Image
         Image(
             painter = painterResource(R.drawable.chatbot_background),
             contentDescription = null,
@@ -98,9 +131,13 @@ fun ChatBotSection(
             colorFilter = ColorFilter.tint(AppWhite.copy(alpha = 0.70f)),
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(160.dp)
+                .size(130.dp)
+                .graphicsLayer {
+                    rotationZ = rotation
+                }
         )
 
+        // Input Area
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -138,8 +175,8 @@ fun ChatBotSection(
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (input.isEmpty()) {
                             Text(
-                                "Message Zeni…",
-                                color = AppWhite.copy(alpha = 0.45f),
+                                "Share your thoughts…",
+                                color = AppWhite.copy(alpha = 0.50f),
                                 fontFamily = DMSansFontFamily
                             )
                         }
@@ -148,7 +185,6 @@ fun ChatBotSection(
                 }
             )
 
-            // ➤ Send Button
             IconButton(
                 onClick = {
                     if (input.isNotBlank()) {

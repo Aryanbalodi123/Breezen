@@ -1,8 +1,19 @@
 package com.example.breezen.feature.home.components
 
-// --- FIX: Corrected import ---
-// --- END FIX ---
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,12 +28,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -40,6 +56,7 @@ import com.example.breezen.core.ui.theme.TextPrimary
 import com.example.breezen.core.ui.util.gradientBackground
 import com.example.breezen.feature.music.TabViewModel
 import com.example.breezen.feature.music.utils.playSongFromPlaylist
+import kotlinx.coroutines.delay
 
 @Composable
 fun HeaderSection(
@@ -51,6 +68,15 @@ fun HeaderSection(
 ) {
     val context = LocalContext.current
     val allSongs by viewModel.allSongs
+    var startAnimation by remember { mutableStateOf(false) }
+
+    // Ensures we show shimmer if loading OR if song hasn't arrived yet (is null)
+    val isContentReady = !isLoading && song != null
+
+    LaunchedEffect(Unit) {
+        delay(100)
+        startAnimation = true
+    }
 
     Box(
         modifier = Modifier
@@ -59,11 +85,22 @@ fun HeaderSection(
             .clip(shape = RoundedCornerShape(bottomEnd = 120.dp))
     ) {
         Row {
-            repeat(5) {
+            repeat(5) { index ->
+                val stripAlpha by animateFloatAsState(
+                    targetValue = if (startAnimation) 1f else 0f,
+                    animationSpec = tween(
+                        durationMillis = 1500, // Slower fade in
+                        delayMillis = index * 150, // Slower staggered effect
+                        easing = FastOutSlowInEasing
+                    ),
+                    label = "stripAlpha"
+                )
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .alpha(stripAlpha)
                         .gradientBackground(
                             listOf(
                                 Color.Black, Color.Black, Color.Black,
@@ -73,71 +110,144 @@ fun HeaderSection(
                 )
             }
         }
+
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                "GOOD MORNING ${username.uppercase()}",
-                style = AppTypography.bodySmall.copy(
-                    letterSpacing = 2.sp, fontSize = 12.sp, fontWeight = FontWeight.Bold
-                ),
-                color = TextPrimary
-            )
-
-            if (isLoading) {
-                ShimmerBox(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(48.dp)
+            AnimatedVisibility(
+                visible = startAnimation,
+                enter = fadeIn(tween(1500)) + slideInVertically(
+                    initialOffsetY = { -60 },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessVeryLow
+                    )
                 )
-            } else {
+            ) {
                 Text(
-                    text = song?.title ?: "No Song",
-                    style = AppTypography.displayMedium.copy(
-                        fontWeight = FontWeight.Light, letterSpacing = 2.sp, fontSize = 48.sp
+                    "GOOD MORNING ${username.uppercase()}",
+                    style = AppTypography.bodySmall.copy(
+                        letterSpacing = 2.sp, fontSize = 12.sp, fontWeight = FontWeight.Bold
                     ),
                     color = TextPrimary
                 )
             }
 
-            if (isLoading) {
-                ShimmerBox(
-                    modifier = Modifier
-                        .width(60.dp)
-                        .height(16.dp)
-                )
-            } else {
-                Text(
-                    text = "${song?.duration?.div(60) ?: 0} MINUTES",
-                    style = AppTypography.bodySmall.copy(
-                        letterSpacing = 2.sp, fontWeight = FontWeight.Bold, fontSize = 12.sp
-                    ),
-                    color = TextPrimary
-                )
+            Crossfade(
+                targetState = isContentReady,
+                animationSpec = tween(durationMillis = 1000), // Slower crossfade
+                label = "TitleCrossfade"
+            ) { ready ->
+                if (!ready) {
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .height(48.dp)
+                    )
+                } else {
+                    // Song is guaranteed non-null here due to isContentReady check
+                    AnimatedVisibility(
+                        visible = startAnimation,
+                        enter = fadeIn(tween(1500)) + slideInVertically(
+                            animationSpec = tween(durationMillis = 1200, delayMillis = 200, easing = FastOutSlowInEasing)
+                        ) { 50 }
+                    ) {
+                        Text(
+                            text = song!!.title,
+                            style = AppTypography.displayMedium.copy(
+                                fontWeight = FontWeight.Light,
+                                letterSpacing = 2.sp,
+                                fontSize = 48.sp
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+                }
+            }
+
+            Crossfade(
+                targetState = isContentReady,
+                animationSpec = tween(durationMillis = 1000),
+                label = "TimeCrossfade"
+            ) { ready ->
+                if (!ready) {
+                    ShimmerBox(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(16.dp)
+                    )
+                } else {
+                    AnimatedVisibility(
+                        visible = startAnimation,
+                        enter = fadeIn(tween(1500)) + slideInVertically(
+                            animationSpec = tween(durationMillis = 1200, delayMillis = 350, easing = FastOutSlowInEasing)
+                        ) { 50 }
+                    ) {
+                        Text(
+                            text = "${song!!.duration.div(60)} MINUTES",
+                            style = AppTypography.bodySmall.copy(
+                                letterSpacing = 2.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(36.dp))
-            IconButton(
-                onClick = {
-                    if (!isLoading && song != null && allSongs.isNotEmpty()) {
-                        playSongFromPlaylist(context, viewModel, song, allSongs, navController)
-                    }
-                },
-                enabled = !isLoading && song != null,
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(CircleShape)
-                    .background(
-                        AppWhite
+
+            AnimatedVisibility(
+                visible = isContentReady,
+                enter = scaleIn(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessVeryLow // Very slow, gentle spring
                     )
+                ) + fadeIn(tween(1500, delayMillis = 500))
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.play),
-                    modifier = Modifier.size(28.dp),
-                    contentDescription = "Play",
-                    tint = AppBlack
+                val interactionSource = remember { MutableInteractionSource() }
+                val isPressed by interactionSource.collectIsPressedAsState()
+                val scale by animateFloatAsState(
+                    targetValue = if (isPressed) 0.92f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "buttonScale"
                 )
+
+                Box(
+                    modifier = Modifier
+                        .scale(scale)
+                        .size(54.dp)
+                        .clip(CircleShape)
+                        .background(AppWhite)
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null
+                        ) {
+                            if (isContentReady && allSongs.isNotEmpty()) {
+                                playSongFromPlaylist(
+                                    context,
+                                    viewModel,
+                                    song!!,
+                                    allSongs,
+                                    navController
+                                )
+                            }
+                        },
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.play),
+                        modifier = Modifier.size(28.dp),
+                        contentDescription = "Play",
+                        tint = AppBlack
+                    )
+                }
             }
         }
     }

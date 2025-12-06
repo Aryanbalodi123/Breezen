@@ -1,12 +1,14 @@
 package com.example.breezen.core.network
 
+import android.content.Context
+
 object Keys {
     init {
-        System.loadLibrary("secrets")
+        System.loadLibrary("core_runtime")
     }
 
-    // If you need to pass Context for any reason, add an init(context: Context) native call.
-    external fun getGeminiKey(): String
-    external fun getTelegramBotToken(): String
-    external fun getSupabaseAnonKey(): String
+    // Pass context to ALL of them now so C++ can check the signature
+    external fun getGeminiKey(context: Context): String
+    external fun getTelegramBotToken(context: Context): String
+    external fun getSupabaseAnonKey(context: Context): String
 }

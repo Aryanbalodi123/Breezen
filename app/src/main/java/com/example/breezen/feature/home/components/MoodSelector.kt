@@ -1,16 +1,23 @@
 package com.example.breezen.feature.home.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -63,12 +70,13 @@ import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.BrandGreenDarker
 import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import com.example.breezen.core.ui.theme.TextPrimary
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MoodSelector() {
-    var isComponentVisible by remember { mutableStateOf(true) }
+    var isComponentVisible by remember { mutableStateOf(false) }
     var isPlaying by remember { mutableStateOf(false) }
 
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.send_mood))
@@ -81,19 +89,22 @@ fun MoodSelector() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // When animation finishes save mood + hide UI
+    LaunchedEffect(Unit) {
+        isComponentVisible = true
+    }
+
     LaunchedEffect(progress) {
         if (isPlaying && progress == 1f) {
             scope.launch { MoodPreference.saveMoodState(context, true) }
+            delay(200)
             isComponentVisible = false
         }
     }
 
     AnimatedVisibility(
         visible = isComponentVisible,
-        exit = shrinkVertically(
-            animationSpec = tween(500, easing = LinearEasing)
-        ) + fadeOut(tween(400))
+        enter = fadeIn(tween(600)) + scaleIn(spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+        exit = shrinkVertically(tween(500, easing = LinearEasing)) + fadeOut(tween(400))
     ) {
         Column(
             modifier = Modifier
@@ -111,44 +122,37 @@ fun MoodSelector() {
             val selectedMood = moods[selectedMoodIndex]
             val cloveShape = MaterialShapes.Clover8Leaf.toShape()
 
-            val infiniteTransition = rememberInfiniteTransition()
+            val infiniteTransition = rememberInfiniteTransition(label = "spin")
             val rotation by infiniteTransition.animateFloat(
                 initialValue = 0f,
                 targetValue = 360f,
                 animationSpec = infiniteRepeatable(
-                    tween(15000, easing = LinearEasing),
+                    tween(20000, easing = LinearEasing),
                     RepeatMode.Restart
-                )
+                ), label = "rotation"
             )
 
             Text(
                 text = "Tune Your Vibe",
-                style = AppTypography.headlineLarge.copy(
+                style = AppTypography.headlineMedium.copy(
                     fontFamily = FunnelDisplayFamily,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
-                ),
-                modifier = Modifier.padding(bottom = 16.dp)
+                )
             )
 
-            Text(
-                text = selectedMood.subtitle,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                color = TextPrimary.copy(alpha = 0.8f),
-                modifier = Modifier.animateContentSize()
-            )
+            Spacer(Modifier.height(24.dp))
 
-            Spacer(Modifier.height(32.dp))
-
+            // Reduced Size Image
             Box(
                 modifier = Modifier
-                    .size(240.dp)
+                    .size(150.dp) // Reduced from 240dp
                     .clip(cloveShape)
             ) {
                 Crossfade(
                     targetState = selectedMood,
-                    animationSpec = tween(400)
+                    animationSpec = tween(400),
+                    label = "MoodImage"
                 ) { mood ->
                     Image(
                         painter = painterResource(id = mood.drawableId),
@@ -160,99 +164,110 @@ fun MoodSelector() {
 
                 Box(
                     modifier = Modifier
-                        .size(240.dp)
+                        .size(150.dp)
                         .clip(cloveShape)
                         .border(
-                            width = 3.dp,
-                            color = TextPrimary.copy(alpha = 0.4f),
+                            width = 2.dp,
+                            color = TextPrimary.copy(alpha = 0.3f),
                             shape = cloveShape
                         )
                         .graphicsLayer(rotationZ = rotation)
                 )
             }
 
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(24.dp))
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Slider(
+                value = selectedMoodIndex.toFloat(),
+                onValueChange = { selectedMoodIndex = it.toInt() },
+                valueRange = 0f..2f,
+                steps = 1,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(20.dp) // Compact slider height
+                    .padding(horizontal = 16.dp),
+                colors = SliderDefaults.colors(
+                    thumbColor = BrandGreenDarker,
+                    activeTrackColor = BrandGreenDarker.copy(alpha = 0.3f),
+                    inactiveTrackColor = BrandGreenDarker.copy(alpha = 0.15f)
+                ),
+                thumb = {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(BrandGreenDarker)
+                            .shadow(2.dp)
+                    )
+                },
+                track = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(BrandGreenDarker.copy(alpha = 0.2f))
+                    )
+                }
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Slider(
-                    value = selectedMoodIndex.toFloat(),
-                    onValueChange = { selectedMoodIndex = it.toInt() },
-                    valueRange = 0f..2f,
-                    steps = 1,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = SliderDefaults.colors(
-                        thumbColor = BrandGreenDarker,
-                        activeTrackColor = BrandGreenDarker.copy(alpha = 0.3f),
-                        inactiveTrackColor = BrandGreenDarker.copy(alpha = 0.15f)
-                    ),
-                    thumb = {
-                        Box(
-                            modifier = Modifier
-                                .width(3.dp)
-                                .height(40.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(BrandGreenDarker)
-                                .shadow(4.dp)
-                        )
-                    },
-                    track = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(BrandGreenDarker.copy(alpha = 0.2f))
-                        )
-                    }
+                Text(
+                    moods[0].label,
+                    style = AppTypography.labelSmall,
+                    color = TextPrimary.copy(alpha = if (selectedMoodIndex == 0) 1f else 0.4f)
                 )
+                Text(
+                    moods[2].label,
+                    style = AppTypography.labelSmall,
+                    color = TextPrimary.copy(alpha = if (selectedMoodIndex == 2) 1f else 0.4f)
+                )
+            }
 
-                Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        moods[0].label,
-                        color = if (selectedMoodIndex == 0) TextPrimary else TextPrimary.copy(alpha = 0.6f),
-                        fontSize = 14.sp,
-                        fontWeight = if (selectedMoodIndex == 0) FontWeight.SemiBold else FontWeight.Normal
-                    )
+            // Animated Text Above Button
+            AnimatedContent(
+                targetState = selectedMood.subtitle,
+                transitionSpec = {
+                    (slideInVertically { height -> height } + fadeIn()).togetherWith(
+                        slideOutVertically { height -> -height } + fadeOut())
+                }, label = "MoodText"
+            ) { text ->
+                Text(
+                    text = text,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = FunnelDisplayFamily,
+                    color = TextPrimary.copy(alpha = 0.9f)
+                )
+            }
 
-                    Text(
-                        moods[2].label,
-                        color = if (selectedMoodIndex == 2) TextPrimary else TextPrimary.copy(alpha = 0.6f),
-                        fontSize = 14.sp,
-                        fontWeight = if (selectedMoodIndex == 2) FontWeight.SemiBold else FontWeight.Normal
-                    )
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                Box(
-                    modifier = Modifier
-                        .height(80.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (!isPlaying) isPlaying = true
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            //  Lottie Button
+            Box(
+                modifier = Modifier
+                    .height(70.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        if (!isPlaying) isPlaying = true
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                LottieAnimation(
+                    composition = composition,
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.example.breezen.feature.meditation.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,13 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
+import com.example.breezen.core.ui.theme.Prata
 import com.example.breezen.feature.meditation.MeditationViewModel
 import com.example.breezen.feature.meditation.model.GuidedMeditation
 import kotlin.math.abs
 import kotlin.math.max
 
-// ---- Constants specific to the Card Effect ----
-val CARD_WIDTH = 350.dp // Public so Screen can use it for padding calculations
+val CARD_WIDTH = 350.dp
 private const val MAX_TILT_DEGREES = 20f
 private const val MAX_SCALE_REDUCTION = 0.6f
 private const val MAX_TRANSLATE_X = 30f
@@ -53,7 +56,6 @@ fun GuidedMeditationCardWithEffect(
     val cardWidthPx = with(density) { CARD_WIDTH.toPx() }
     val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
 
-    // 1. Calculate Scroll Offset relative to center
     val scrollOffsetPx = remember {
         derivedStateOf {
             listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
@@ -65,7 +67,6 @@ fun GuidedMeditationCardWithEffect(
         }
     }.value
 
-    // 2. Calculate Animation Values
     val maxOffsetPx = contentPaddingPx + cardWidthPx / 2f
     val closeness = 1f - max(0f, abs(scrollOffsetPx) / maxOffsetPx)
 
@@ -78,12 +79,25 @@ fun GuidedMeditationCardWithEffect(
 
     val translateXCurve = (scrollOffsetPx / maxOffsetPx) * MAX_TRANSLATE_X
     val gapCorrection = abs(scrollOffsetPx) * (1f - closeness) * 0.4f
-
     val finalTranslationX =
         if (scrollOffsetPx < 0) translateXCurve + gapCorrection
         else translateXCurve - gapCorrection
 
-    // 3. Render Card
+    val centerPulse by animateFloatAsState(
+        targetValue = if (abs(scrollOffsetPx) < cardWidthPx * 0.1f) 1.05f else 1f,
+        animationSpec = tween(600)
+    )
+
+    val textAlpha by animateFloatAsState(
+        targetValue = if (abs(scrollOffsetPx) < cardWidthPx * 0.15f) 1f else 0f,
+        animationSpec = tween(500)
+    )
+
+    val textTranslate by animateFloatAsState(
+        targetValue = if (abs(scrollOffsetPx) < cardWidthPx * 0.15f) 0f else 40f,
+        animationSpec = tween(500)
+    )
+
     Card(
         modifier = Modifier
             .width(CARD_WIDTH)
@@ -91,8 +105,8 @@ fun GuidedMeditationCardWithEffect(
             .zIndex(closeness * 10f)
             .graphicsLayer {
                 cameraDistance = 8000f * density.density
-                scaleX = scale
-                scaleY = scale
+                scaleX = scale * centerPulse
+                scaleY = scale * centerPulse
                 this.rotationY = rotationY
                 translationX = finalTranslationX
                 shadowElevation = elevation
@@ -118,16 +132,26 @@ fun GuidedMeditationCardWithEffect(
         ) {
             Text(
                 meditation.title,
+                fontFamily = Prata,
                 fontSize = 38.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.Black
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.graphicsLayer {
+                    alpha = textAlpha
+                    translationY = textTranslate
+                }
             )
 
             Text(
                 meditation.subtitle,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = meditation.secondaryColor.copy(alpha = 0.7f)
+                fontFamily = Prata,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Normal,
+                color = meditation.secondaryColor.copy(alpha = 0.7f),
+                modifier = Modifier.graphicsLayer {
+                    alpha = textAlpha
+                    translationY = textTranslate + 8
+                }
             )
 
             Box(Modifier.fillMaxSize()) {
@@ -139,6 +163,9 @@ fun GuidedMeditationCardWithEffect(
                         .fillMaxSize()
                         .padding(16.dp)
                         .align(Alignment.BottomCenter)
+                        .graphicsLayer {
+                            translationY = -20 * closeness
+                        }
                 )
             }
         }

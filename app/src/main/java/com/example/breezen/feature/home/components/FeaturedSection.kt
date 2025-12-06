@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,6 +49,7 @@ import com.example.breezen.core.ui.theme.CornerLarge
 import com.example.breezen.core.ui.theme.CornerSmall
 import com.example.breezen.core.ui.theme.CosmosBlackBlue
 import com.example.breezen.core.ui.theme.DeepTeal
+import com.example.breezen.core.ui.theme.FunnelDisplayFamily
 import com.example.breezen.core.ui.theme.IndigoNight
 import com.example.breezen.core.ui.theme.MidnightBlue
 import com.example.breezen.core.ui.theme.MistGreen
@@ -70,13 +70,16 @@ fun FeaturedSection(
 
     Column {
         Text(
-            text = "Refreshing Tunes",
-            style = AppTypography.headlineMedium.copy(color = TextPrimary),
+            text = "Daily Meditations",
+            style = AppTypography.headlineMedium.copy(color = TextPrimary, fontFamily = FunnelDisplayFamily),
+
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         )
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
@@ -222,6 +225,7 @@ fun FeatureSectionCard2(
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy((-50).dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxSize()
                     .wrapContentWidth(Alignment.End)

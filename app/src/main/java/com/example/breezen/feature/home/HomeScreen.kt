@@ -140,7 +140,7 @@ fun HomeContent(
                 navController = navController
             )
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(64.dp))
         }
     }
 }
