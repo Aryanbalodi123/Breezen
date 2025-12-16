@@ -147,22 +147,15 @@ fun HeaderSection(
                     )
                 } else {
                     // Song is guaranteed non-null here due to isContentReady check
-                    AnimatedVisibility(
-                        visible = startAnimation,
-                        enter = fadeIn(tween(1500)) + slideInVertically(
-                            animationSpec = tween(durationMillis = 1200, delayMillis = 200, easing = FastOutSlowInEasing)
-                        ) { 50 }
-                    ) {
-                        Text(
-                            text = song!!.title,
-                            style = AppTypography.displayMedium.copy(
-                                fontWeight = FontWeight.Light,
-                                letterSpacing = 2.sp,
-                                fontSize = 48.sp
-                            ),
-                            color = TextPrimary
-                        )
-                    }
+                    Text(
+                        text = song!!.title,
+                        style = AppTypography.displayMedium.copy(
+                            fontWeight = FontWeight.Light,
+                            letterSpacing = 2.sp,
+                            fontSize = 48.sp
+                        ),
+                        color = TextPrimary
+                    )
                 }
             }
 
@@ -178,22 +171,15 @@ fun HeaderSection(
                             .height(16.dp)
                     )
                 } else {
-                    AnimatedVisibility(
-                        visible = startAnimation,
-                        enter = fadeIn(tween(1500)) + slideInVertically(
-                            animationSpec = tween(durationMillis = 1200, delayMillis = 350, easing = FastOutSlowInEasing)
-                        ) { 50 }
-                    ) {
-                        Text(
-                            text = "${song!!.duration.div(60)} MINUTES",
-                            style = AppTypography.bodySmall.copy(
-                                letterSpacing = 2.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            ),
-                            color = TextPrimary
-                        )
-                    }
+                    Text(
+                        text = "${song!!.duration.div(60)} MINUTES",
+                        style = AppTypography.bodySmall.copy(
+                            letterSpacing = 2.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        ),
+                        color = TextPrimary
+                    )
                 }
             }
 

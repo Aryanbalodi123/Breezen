@@ -1,8 +1,10 @@
 package com.example.breezen.feature.home
 
 import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.breezen.core.data.MoodPreference
-import com.example.breezen.core.network.Song
 import com.example.breezen.core.ui.theme.AppBlack
 import com.example.breezen.feature.chatbot.ChatViewModel
 import com.example.breezen.feature.home.components.AffirmationSection
@@ -32,8 +36,8 @@ import com.example.breezen.feature.home.components.HeaderSection
 import com.example.breezen.feature.home.components.MoodSelector
 import com.example.breezen.feature.meditation.MeditationViewModel
 import com.example.breezen.feature.music.TabViewModel
+import kotlinx.coroutines.delay
 
-@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun HomeContent(
@@ -45,42 +49,55 @@ fun HomeContent(
 ) {
     val context = LocalContext.current
 
-    /**
-     * Loads song tabs + metadata once when the screen appears.
-     * Required to hydrate all sections dependent on song data.
-     */
+    // 1. Observe Data from ViewModels
+    val tabs by viewModel.tabs
+    // We use allSongs directly if available, otherwise flatten the map
+    val songsMap by viewModel.songs
+
+    // Assuming homeViewModel.user is a State<User?> or similar
+    val user by homeViewModel.user
+
+    val isLoading = tabs.isEmpty()
+
+    // 2. Initial Data Fetch
     LaunchedEffect(Unit) {
         if (viewModel.tabs.value.isEmpty()) {
             viewModel.fetchSongData(context)
         }
     }
 
-    val tabs by viewModel.tabs
-    val songs by viewModel.songs
-    val user by homeViewModel.user
-    val isLoading = tabs.isEmpty()
-
-    /**
-     * Once songs arrive, choose header song + two featured songs.
-     * Triggers only when songs list changes.
-     */
-    LaunchedEffect(songs) {
-        if (songs.isNotEmpty() && viewModel.headerSong == null) {
-            val allSongs = songs.values.flatten()
-            viewModel.headerSong = allSongs.randomOrNull()
-            viewModel.featuredSongs = allSongs.shuffled().take(2)
+    // 3. Logic to pick a random Header Song & Featured Songs
+    // This runs only when songs are loaded and header is still null
+    LaunchedEffect(songsMap) {
+        if (songsMap.isNotEmpty() && viewModel.headerSong == null) {
+            val allSongsList = songsMap.values.flatten()
+            if (allSongsList.isNotEmpty()) {
+                viewModel.headerSong = allSongsList.randomOrNull()
+                viewModel.featuredSongs = allSongsList.shuffled().take(2)
+            }
         }
     }
 
-    /**
-     * Observe daily mood completion state.
-     * Controls visibility of MoodSelector.
-     */
+    // 4. Observe Mood State (Flow)
     val isMoodDoneToday by MoodPreference
         .observeMoodState(context)
-        .collectAsState(initial = false)
+        .collectAsState(initial = null)
 
-    val headerSong: Song? = viewModel.headerSong
+    // Access the property directly (assuming it is backed by mutableStateOf in VM)
+    val headerSong = viewModel.headerSong
+
+    var showMoodSelector by remember { mutableStateOf(false) }
+    var showRestOfContent by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        // Wait for Header Animation to mostly finish (HeaderSection takes ~1.5s)
+        delay(2000)
+        showMoodSelector = true
+
+        // Slight delay before showing affirmations to create a cascading effect
+        delay(600)
+        showRestOfContent = true
+    }
 
     Box(
         modifier = Modifier
@@ -95,15 +112,15 @@ fun HomeContent(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // Top app bar (logo + avatar)
+            // Top Header
             AppHeader(
-                username = user?.username ?: "",
+                username = user?.username ?: "User",
                 navController = navController
             )
 
             Spacer(Modifier.height(28.dp))
 
-            // Music banner with gradient background + play button
+            // Music Player Banner
             HeaderSection(
                 song = headerSong,
                 viewModel = viewModel,
@@ -114,33 +131,41 @@ fun HomeContent(
 
             Spacer(Modifier.height(28.dp))
 
-            // Mood picker shown once per day
-            if (!isMoodDoneToday) {
+            // Daily Mood Selector (Only if not done today)
+            if (showMoodSelector && isMoodDoneToday == false) {
+                // MoodSelector has its own internal animation, so we just trigger it here
                 MoodSelector()
+                Spacer(Modifier.height(28.dp))
             }
 
-            Spacer(Modifier.height(28.dp))
+            // Rest of the content (Affirmations, Featured, Chatbot)
+            AnimatedVisibility(
+                visible = showRestOfContent,
+                enter = fadeIn(tween(1000)) + slideInVertically(tween(1000)) { it / 4 }
+            ) {
+                Column {
+                    // Affirmations
+                    AffirmationSection()
 
-            // Swipeable inspirational cards
-            AffirmationSection()
+                    Spacer(Modifier.height(28.dp))
 
-            Spacer(Modifier.height(28.dp))
+                    // Featured Meditations
+                    FeaturedSection(
+                        navController = navController,
+                        viewModel = meditationViewModel
+                    )
 
-            // Two recommended meditation cards
-            FeaturedSection(
-                navController = navController,
-                viewModel = meditationViewModel
-            )
+                    Spacer(Modifier.height(28.dp))
 
-            Spacer(Modifier.height(28.dp))
+                    // ChatBot Entry
+                    ChatBotSection(
+                        chatViewModel = chatViewModel,
+                        navController = navController
+                    )
 
-            // Chatbot quick-entry section
-            ChatBotSection(
-                chatViewModel = chatViewModel,
-                navController = navController
-            )
-
-            Spacer(Modifier.height(64.dp))
+                    Spacer(Modifier.height(64.dp))
+                }
+            }
         }
     }
 }

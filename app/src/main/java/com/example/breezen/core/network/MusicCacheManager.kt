@@ -23,18 +23,18 @@ object MusicCacheManager {
 
     private const val SUBDIR = "music_cache"
 
-    private fun cacheDir(context: Context): File {
-        val dir = File(context.cacheDir, SUBDIR)
+    private fun cacheDir(context: Context?): File {
+        val dir = File(context?.cacheDir, SUBDIR)
         if (!dir.exists()) dir.mkdirs()
         return dir
     }
 
-    fun getCachedFile(context: Context, fileName: String): File =
+    fun getCachedFile(context: Context?, fileName: String): File =
         File(cacheDir(context), fileName)
 
     // ------- Important: Downloads file only if missing -------
     // Uses temp file first → prevents corrupted partial files
-    suspend fun downloadIfMissing(context: Context, url: String, fileName: String): String? {
+    suspend fun downloadIfMissing(context: Context?, url: String, fileName: String): String? {
         return withContext(Dispatchers.IO) {
             try {
                 val localFile = getCachedFile(context, fileName)

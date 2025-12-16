@@ -1,11 +1,15 @@
 package com.example.breezen.feature.settings
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,12 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -53,7 +57,6 @@ import com.example.breezen.core.data.UserPreferences
 import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.AppWhite
 import com.example.breezen.core.ui.theme.BrandGreen
-import com.example.breezen.core.ui.theme.BrandGreenBright
 import com.example.breezen.core.ui.theme.SystemStop
 import com.example.breezen.core.ui.theme.TextSecondary
 import com.example.breezen.feature.settings.components.LogoutModal
@@ -62,33 +65,31 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * Main Settings screen displaying user profile, security options, and app information.
- * Handles navigation to sub-screens and the logout process.
+ * Main Settings Screen.
+ * Displays profile summary, app settings, and logout functionality.
  */
 @Composable
 fun SettingsScreen(
     navController: NavController,
     viewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
+    // --- Dependencies & State ---
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val vmState by viewModel.state.collectAsState()
 
+    // Observe username from DataStore
     val username by UserPreferences
         .getUsername(context)
         .collectAsState(initial = "You")
 
+    // UI States for Modals
     var showPasswordModal by remember { mutableStateOf(false) }
     var showLogoutModal by remember { mutableStateOf(false) }
     var successMessage by remember { mutableStateOf<String?>(null) }
 
-    // Premium dark background with subtle green tint
+    // --- Background Design ---
     val backgroundGradient = Brush.verticalGradient(
-        listOf(
-            Color(0xFF0A0E0A),
-            Color(0xFF000000),
-            Color(0xFF000000)
-        )
+        listOf(Color(0xFF0F1110), Color(0xFF000000))
     )
 
     Box(
@@ -96,56 +97,58 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(backgroundGradient)
     ) {
+        // --- Scrollable Content ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 100.dp)
+                .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
+            Spacer(Modifier.height(20.dp))
+
+            // 1. User Profile Section
+            ProfileCard(username)
+
+            Spacer(Modifier.height(40.dp))
+
+            // 2. Security Section
+            SectionHeader("Account & Security")
             Spacer(Modifier.height(16.dp))
-
-            // Profile Overview
-            PremiumProfileCard(username)
-
-            Spacer(Modifier.height(36.dp))
-
-            // Security Settings
-            SectionHeader("Security")
-            Spacer(Modifier.height(12.dp))
-            PremiumSettingCard(
+            SettingCard(
                 icon = Icons.Default.Lock,
                 title = "Change Password",
-                subtitle = "Update your account security"
+                subtitle = "Update your login credentials"
             ) { showPasswordModal = true }
 
             Spacer(Modifier.height(32.dp))
 
-            // Information Section
-            SectionHeader("About")
-            Spacer(Modifier.height(12.dp))
-            PremiumSettingCard(
+            // 3. Info Section
+            SectionHeader("Information")
+            Spacer(Modifier.height(16.dp))
+            SettingCard(
                 icon = Icons.Default.Info,
                 title = "Credits",
-                subtitle = "Music & assets attribution"
+                subtitle = "Assets and attribution"
             ) { navController.navigate("settings_credits") }
 
             Spacer(Modifier.height(12.dp))
 
-            PremiumSettingCard(
+            SettingCard(
                 icon = Icons.Default.Info,
                 title = "About Developer",
-                subtitle = "Learn more about the developer"
+                subtitle = "Behind the scenes"
             ) { navController.navigate("developer_page") }
 
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(50.dp))
 
-            // Logout Action
+            // 4. Footer / Logout
             LogoutButton { showLogoutModal = true }
+
+            // Bottom padding for scrolling
+            Spacer(Modifier.height(100.dp))
         }
 
-        // ============================================================
-        //  MODALS & OVERLAYS
-        // ============================================================
+        // --- Overlays (Modals & Toasts) ---
 
         ChangePasswordModal(
             visible = showPasswordModal,
@@ -158,7 +161,7 @@ fun SettingsScreen(
             onDismissRequest = { showLogoutModal = false },
             onConfirm = {
                 showLogoutModal = false
-                // Handle logout logic: Clear prefs -> API call -> Navigate to login
+                // Logic: Clear data -> Reset flags -> Navigate to Onboarding
                 scope.launch {
                     UserPreferences.clearAll(context)
                     OnboardingPreferences(context).setOnboardingCompleted(false)
@@ -171,7 +174,7 @@ fun SettingsScreen(
             }
         )
 
-        // Floating success toast message
+        // Temporary toast notification logic
         successMessage?.let { msg ->
             LaunchedEffect(msg) {
                 delay(1500)
@@ -179,284 +182,240 @@ fun SettingsScreen(
             }
             SuccessToast(
                 message = msg,
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp)
             )
         }
     }
 }
 
 /**
- * Displays user avatar, name, and a time-sensitive greeting (Morning/Afternoon/Evening).
+ * Displays the user's avatar with a breathing glow animation and a time-aware greeting.
  */
 @Composable
-fun PremiumProfileCard(username: String?) {
-    // Determine greeting based on current hour
-    val compliment = remember {
+fun ProfileCard(username: String?) {
+    val name = username ?: "User"
+
+    // Calculate greeting based on system time
+    val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when (hour) {
-            in 5..11 -> "Good morning, ${username ?: "friend"} ✨"
-            in 12..17 -> "Good afternoon, ${username ?: "friend"} 🌿"
-            else -> "Good evening, ${username ?: "friend"} 🌙"
+            in 5..11 -> "Good morning,"
+            in 12..17 -> "Good afternoon,"
+            else -> "Good evening,"
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
+            .shadow(20.dp, RoundedCornerShape(24.dp), spotColor = BrandGreen.copy(0.15f))
+            .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF1A1F1A), Color(0xFF0F140F))
+                Brush.linearGradient(
+                    listOf(Color(0xFF1C221C), Color(0xFF111411))
                 )
             )
-            .border(
-                1.dp,
-                Brush.verticalGradient(
-                    listOf(BrandGreen.copy(alpha = 0.3f), Color.White.copy(alpha = 0.08f))
-                ),
-                RoundedCornerShape(28.dp)
-            )
-            .padding(32.dp)
+            .border(1.dp, Color.White.copy(0.05f), RoundedCornerShape(24.dp))
+            .padding(24.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Avatar Container with Glow Effect
+            // --- Avatar with Glow Animation ---
             Box(contentAlignment = Alignment.Center) {
+                val infiniteTransition = rememberInfiniteTransition()
+                val glowAlpha by infiniteTransition.animateFloat(
+                    initialValue = 0.2f,
+                    targetValue = 0.6f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+
+                // Outer Glow
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(80.dp)
                         .background(
                             Brush.radialGradient(
-                                listOf(BrandGreen.copy(alpha = 0.4f), Color.Transparent)
-                            ),
-                            CircleShape
+                                listOf(BrandGreen.copy(alpha = glowAlpha), Color.Transparent)
+                            )
                         )
                 )
+
+                // Actual Avatar Circle
                 Box(
                     modifier = Modifier
-                        .size(96.dp)
+                        .size(64.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(listOf(BrandGreen, BrandGreenBright))
-                        )
-                        .border(3.dp, Color.Black.copy(alpha = 0.2f), CircleShape),
+                        .background(BrandGreen)
+                        .border(2.dp, Color(0xFF2A332A), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = username?.firstOrNull()?.uppercase() ?: "U",
-                        style = AppTypography.displayLarge.copy(
-                            color = Color.White,
-                            fontSize = 40.sp,
+                        text = name.first().uppercase(),
+                        style = AppTypography.headlineMedium.copy(
+                            color = AppWhite,
                             fontWeight = FontWeight.Bold
                         )
                     )
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.width(20.dp))
 
-            Text(
-                username ?: "User",
-                style = AppTypography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp
-                ),
-                color = AppWhite
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                compliment,
-                style = AppTypography.bodyMedium.copy(
-                    fontSize = 15.sp,
-                    color = BrandGreen.copy(alpha = 0.85f)
-                ),
-                textAlign = TextAlign.Center
-            )
+            // --- Text Content ---
+            Column {
+                Text(
+                    text = greeting,
+                    style = AppTypography.bodyMedium.copy(color = TextSecondary),
+                    fontWeight = FontWeight.Normal
+                )
+                Text(
+                    text = name,
+                    style = AppTypography.headlineSmall.copy(color = AppWhite),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
 
 /**
- * Reusable section title with consistent styling and spacing.
+ * Standardized header for settings categories.
  */
 @Composable
 fun SectionHeader(title: String) {
     Text(
         text = title.uppercase(),
-        style = AppTypography.labelMedium.copy(
-            fontSize = 12.sp,
+        style = AppTypography.labelSmall.copy(
+            color = BrandGreen,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 1.2.sp
+            letterSpacing = 1.5.sp
         ),
-        color = TextSecondary.copy(alpha = 0.6f),
-        modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+        modifier = Modifier.padding(start = 8.dp)
     )
 }
 
 /**
- * A clickable list item card with an icon, title, subtitle, and press animation.
+ * A generic row for a settings item.
+ * Includes a press-down animation.
  */
 @Composable
-fun PremiumSettingCard(
+fun SettingCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
     onClick: () -> Unit
 ) {
-    var pressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.98f else 1f,
-        animationSpec = tween(100)
-    )
+    // Animation state for touch feedback
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(if (isPressed) 0.97f else 1f)
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF1A1F1A), Color(0xFF121712))
-                )
-            )
-            .border(
-                1.dp,
-                Color.White.copy(alpha = 0.06f),
-                RoundedCornerShape(20.dp)
-            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF1A1D1A)) // Dark surface color
             .clickable {
-                pressed = true
+                isPressed = true
                 onClick()
             }
-            .padding(20.dp)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Reset press state after animation
-        LaunchedEffect(pressed) {
-            if (pressed) {
+        // Reset animation trigger
+        LaunchedEffect(isPressed) {
+            if (isPressed) {
                 delay(100)
-                pressed = false
+                isPressed = false
             }
         }
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+        // Icon container
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(BrandGreen.copy(alpha = 0.15f)), // Subtle green tint
+            contentAlignment = Alignment.Center
         ) {
-            // Icon container
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                BrandGreen.copy(alpha = 0.9f),
-                                BrandGreenBright.copy(alpha = 0.9f)
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = AppTypography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 17.sp
-                    ),
-                    color = AppWhite
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    subtitle,
-                    style = AppTypography.bodySmall.copy(fontSize = 14.sp),
-                    color = TextSecondary.copy(alpha = 0.7f)
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-
             Icon(
-                Icons.Default.ChevronRight,
+                imageVector = icon,
                 contentDescription = null,
-                tint = TextSecondary.copy(alpha = 0.4f),
-                modifier = Modifier.size(24.dp)
+                tint = BrandGreen,
+                modifier = Modifier.size(20.dp)
             )
         }
+
+        Spacer(Modifier.width(16.dp))
+
+        // Text Info
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = AppTypography.bodyLarge.copy(color = AppWhite, fontWeight = FontWeight.Medium)
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = AppTypography.bodySmall.copy(color = TextSecondary.copy(alpha = 0.7f))
+            )
+        }
+
+        // Navigation Chevron
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = TextSecondary.copy(alpha = 0.4f)
+        )
     }
 }
 
 /**
- * Destructive action button styled with a reddish tint for the Logout action.
+ * Specifically styled button for the Logout action (Danger zone).
  */
 @Composable
 fun LogoutButton(onClick: () -> Unit) {
-    var pressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.96f else 1f,
-        animationSpec = tween(100)
-    )
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(if (isPressed) 0.97f else 1f)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF1F1414), Color(0xFF170F0F))
-                )
-            )
-            .border(
-                1.dp,
-                SystemStop.copy(alpha = 0.2f),
-                RoundedCornerShape(20.dp)
-            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF241818)) // Reddish dark background
+            .border(1.dp, SystemStop.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             .clickable {
-                pressed = true
+                isPressed = true
                 onClick()
             }
-            .padding(20.dp)
+            .padding(vertical = 18.dp),
+        contentAlignment = Alignment.Center
     ) {
-        LaunchedEffect(pressed) {
-            if (pressed) {
+        LaunchedEffect(isPressed) {
+            if (isPressed) {
                 delay(100)
-                pressed = false
+                isPressed = false
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                Icons.Default.ExitToApp,
+                imageVector = Icons.Default.ExitToApp,
                 contentDescription = null,
-                tint = SystemStop,
-                modifier = Modifier.size(24.dp)
+                tint = SystemStop
             )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
-                "Log Out",
-                color = SystemStop,
+                text = "Log Out",
                 style = AppTypography.bodyLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 17.sp
+                    color = SystemStop,
+                    fontWeight = FontWeight.Bold
                 )
             )
         }

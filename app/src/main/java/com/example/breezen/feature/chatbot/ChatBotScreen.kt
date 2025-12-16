@@ -1,8 +1,6 @@
 package com.example.breezen.feature.chatbot
 
 import android.content.Intent
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +15,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -37,23 +35,26 @@ import com.example.breezen.feature.chatbot.components.TopHeader
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ChatBotScreen(
     navController: NavHostController,
     viewModel: ChatViewModel
 ) {
+
+
+    // ✅ CORRECT:
+    val loading by remember { derivedStateOf { viewModel.loading } }
+
     val messages = viewModel.messages
-    val loading by viewModel.loading.collectAsState()
     val listState = rememberLazyListState()
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     val dailyCount = viewModel.dailySessionCount
 
-    // Shared haze instance for all bubbles
+    // Shared haze instance
     val hazeState = remember { HazeState() }
 
-    // Auto-scroll on new message
+    // Auto-scroll to bottom when new message arrives
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.lastIndex)
@@ -73,6 +74,7 @@ fun ChatBotScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
 
+            // Background image
             Image(
                 painter = painterResource(id = R.drawable.chatbot_bg),
                 contentDescription = null,
@@ -82,9 +84,7 @@ fun ChatBotScreen(
                     .haze(hazeState)
             )
 
-            // ---------------------------
-            // FOREGROUND CONTENT
-            // ---------------------------
+            // Foreground Chat UI
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -110,10 +110,9 @@ fun ChatBotScreen(
                         }
                     }
 
-                    // Messages
+                    // Chat messages
                     itemsIndexed(messages) { index, (sender, message) ->
 
-                        // Check if this is the very last message in the list
                         val isLast = index == messages.lastIndex
 
                         MessageBubble(
@@ -129,20 +128,20 @@ fun ChatBotScreen(
                                     putExtra(Intent.EXTRA_TEXT, it)
                                     type = "text/plain"
                                 }
-                                context.startActivity(
-                                    Intent.createChooser(shareIntent, "Share via")
-                                )
+                                context.startActivity(Intent.createChooser(shareIntent, "Share via"))
                             },
                             onRegenerate = {
-                                val lastUserMsg =
-                                    messages.lastOrNull { it.first == "USER" }?.second
+                                val lastUserMsg = messages.lastOrNull { it.first == "USER" }?.second
                                 if (lastUserMsg != null) viewModel.sendMessage(lastUserMsg)
                             }
                         )
                     }
 
+                    // Loading bubble
                     if (loading) {
-                        item { LoadingBubble() }
+                        item {
+                            LoadingBubble()
+                        }
                     }
                 }
             }

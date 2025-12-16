@@ -61,8 +61,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             BreezenTheme {
            InternetGate {
-               val context = LocalContext.current
-               val scope = rememberCoroutineScope()
+               LocalContext.current
+               rememberCoroutineScope()
 
 
                Box(

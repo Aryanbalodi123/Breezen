@@ -69,7 +69,6 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BottomNavigationBar(
     navigation: AppNavigationState,
@@ -154,7 +153,6 @@ fun BottomNavigationBar(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ChatInputBar(chatViewModel: ChatViewModel) {
 

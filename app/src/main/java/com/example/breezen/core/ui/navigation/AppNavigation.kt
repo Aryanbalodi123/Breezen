@@ -111,7 +111,6 @@ fun rememberAppNavigationState(
 
 // ------- APP NAV HOST -------
 // ------- Entire navigation graph + onboarding logic -------
-@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AppNavHost(onboardingPreferences: OnboardingPreferences) {

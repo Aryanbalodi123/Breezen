@@ -51,6 +51,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -75,15 +76,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withTimeoutOrNull
 
-
-// Converts total milliseconds into separate minutes and seconds for formatting.
 fun minSec(duration: Long): List<Long> {
     val minutes = duration / 1000 / 60
     val seconds = (duration / 1000) % 60
     return listOf(minutes, seconds)
 }
 
-// Defines the set of user-initiated actions for media control.
 sealed class PlayerEvent {
     object PlayPause : PlayerEvent()
     object Previous : PlayerEvent()
@@ -92,8 +90,6 @@ sealed class PlayerEvent {
     object ToggleRepeat : PlayerEvent()
 }
 
-
-// Manages the audio player lifecycle, data synchronization, and overall screen orchestration.
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
@@ -120,9 +116,12 @@ fun PlayerScreen(
         label = "dominantColor"
     )
 
-    // Initializes and prepares the media source whenever the stream URL changes.
+    // --- OPTIMIZATION 5 (Mimicked): ExoPlayer setup handles optimistic updates
+    // It only re-prepares if the URL *actually* changed and is not empty.
     LaunchedEffect(uiState.streamUrl) {
         if (uiState.streamUrl.isNotEmpty()) {
+            // Only set not ready if we are actually switching sources
+            // If it was already playing, this transition is seamless
             isPlayerReady = false
 
             Log.d("PlayerScreen", "⏯ Setting up player for ${uiState.streamUrl}")
@@ -141,11 +140,14 @@ fun PlayerScreen(
                 player.playWhenReady = true
             } catch (e: Exception) {
                 Log.e("PlayerScreen", "Player prepare failed", e)
+                viewModel.onPlaybackError(context, currentSong, e.message ?: "Setup Error")
             }
+        } else {
+
+            Log.d("PlayerScreen", "⏳ Waiting for stream URL (Optimistic Mode)")
         }
     }
 
-    // Handles the player's play/pause state based on the Android lifecycle events.
     DisposableEffect(lifecycleOwner, player) {
         val obs = LifecycleEventObserver { _, event ->
             when (event) {
@@ -154,7 +156,6 @@ fun PlayerScreen(
                 else -> Unit
             }
         }
-
         lifecycleOwner.lifecycle.addObserver(obs)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(obs)
@@ -162,7 +163,6 @@ fun PlayerScreen(
         }
     }
 
-    // Attaches listeners to the player for state updates and polls the current playback position.
     LaunchedEffect(player) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -173,14 +173,17 @@ fun PlayerScreen(
                 viewModel.setIsBuffering(state == Player.STATE_BUFFERING)
 
                 if (state == Player.STATE_READY) {
-                    Log.d("PlayerScreen", "✔ Player READY")
                     isPlayerReady = true
                 }
 
                 if (state == Player.STATE_ENDED) {
-                    Log.d("PlayerScreen", "Song ended, playing next")
                     viewModel.playNextSong(context, forceManual = false)
                 }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                Log.e("PlayerScreen", "ExoPlayer Runtime Error: ${error.message}")
+                viewModel.onPlaybackError(context, currentSong, error.message ?: "ExoPlayer Error")
             }
         }
 
@@ -199,29 +202,20 @@ fun PlayerScreen(
         }
     }
 
-    // Asynchronously attempts to load the song image with a timeout safeguard.
+    // Load Image
     LaunchedEffect(currentSong?.id) {
         val id = currentSong?.id ?: return@LaunchedEffect
         isImageLoaded = false
-
         val success = withTimeoutOrNull(2000) {
             val request = ImageRequest.Builder(context)
                 .data("$IMAGE_BUCKET_URL$id.webp")
                 .build()
-
             context.imageLoader.execute(request)
             true
         }
-
         isImageLoaded = true
-
-        Log.d(
-            "PlayerScreen",
-            if (success == true) "✔ Image Loaded" else "⚠ Timeout Image"
-        )
     }
 
-    // Signals the view model that both audio and visual assets are ready for display.
     LaunchedEffect(isPlayerReady, isImageLoaded) {
         if (isPlayerReady && isImageLoaded) {
             viewModel.onPlayerReadyAndImageLoaded()
@@ -255,27 +249,24 @@ fun PlayerScreen(
                 when (event) {
                     PlayerEvent.PlayPause ->
                         if (player.isPlaying) player.pause() else player.play()
-
                     PlayerEvent.Next -> {
+                        // Stop immediately to give instant feedback
                         player.stop()
                         viewModel.playNextSong(context, forceManual = true)
                     }
-
                     PlayerEvent.Previous -> {
                         player.stop()
                         viewModel.playPreviousSong(context)
                     }
-
-                    PlayerEvent.ToggleShuffle ->
-                        viewModel.toggleShuffle()
-
-                    PlayerEvent.ToggleRepeat ->
-                        viewModel.toggleRepeat()
+                    PlayerEvent.ToggleShuffle -> viewModel.toggleShuffle()
+                    PlayerEvent.ToggleRepeat -> viewModel.toggleRepeat()
                 }
             },
             navController = navController
         )
 
+        // Only show full screen loader if we are in INITIAL load (first time opening player)
+        // Transitions between songs now use IDLE state so this doesn't pop up.
         AnimatedVisibility(
             visible = uiState.loadState == PlayerLoadState.INITIAL,
             enter = fadeIn(),
@@ -286,7 +277,6 @@ fun PlayerScreen(
     }
 }
 
-// Renders the visual interface components including progress, artwork, and controls.
 @SuppressLint("DefaultLocale")
 @Composable
 internal fun PlayerContent(
@@ -304,7 +294,6 @@ internal fun PlayerContent(
     navController: NavHostController
 ) {
     val currentSong = uiState.currentSong
-    // This is an artistic choice, not a theme color. It stays.
     val beigeColor = Color(0xFFF5F5DC)
 
     val showShimmer = !isImageLoaded
@@ -318,19 +307,16 @@ internal fun PlayerContent(
     Box(
         modifier = modifier
             .background(MaterialTheme.colorScheme.background)
-            // --- UI FIX: Apply Dominant Color Gradient ---
             .drawBehind {
-                // 1. Fill background with a dark wash of the dominant color
                 drawRect(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            dominantColor.copy(alpha = 0.6f), // Top: stronger color
+                            dominantColor.copy(alpha = 0.6f),
                             dominantColor.copy(alpha = 0.3f),
-                            Color.Black // Bottom: fade to black
+                            Color.Black
                         )
                     )
                 )
-                // 2. Keep your artistic sunshine effect on top
                 drawSunshineEffect(dominantColor, size)
             }
 
@@ -341,7 +327,8 @@ internal fun PlayerContent(
                 .padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            BackButton(navController)
+            Box(modifier = Modifier.fillMaxWidth().padding(16.dp).align(Alignment.Start)){
+            BackButton(navController)}
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -353,7 +340,7 @@ internal fun PlayerContent(
                 MusicProgress(
                     currentTime = effectiveCurrentTime,
                     duration = songDurationMs,
-                    strokeColor = beigeColor, // Artistic choice
+                    strokeColor = beigeColor,
                     onSeek = onSeek
                 )
 
@@ -365,7 +352,7 @@ internal fun PlayerContent(
                             append(String.format("%02d", secondCurrent))
                         }
                         append(" | ")
-                        withStyle(SpanStyle(color = beigeColor)) { // Artistic choice
+                        withStyle(SpanStyle(color = beigeColor)) {
                             append(String.format("%02d", minuteTotal))
                             append(":")
                             append(String.format("%02d", secondTotal))
@@ -455,7 +442,6 @@ internal fun PlayerContent(
     }
 }
 
-// Draws a custom gradient overlay to simulate lighting based on the dominant color.
 private fun DrawScope.drawSunshineEffect(dominantColor: Color, canvasSize: Size) {
     val lightSource = Offset(-canvasSize.width * 0.3f, -canvasSize.height * 0.2f)
     val mainGradient = Brush.linearGradient(

@@ -47,7 +47,6 @@ import com.example.breezen.core.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-
 data class Affirmation(
     val id: Int,
     val text: String,
@@ -57,8 +56,6 @@ data class Affirmation(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AffirmationSection() {
-
-    // Mutable list so cards disappear after swipe
     val affirmations = remember {
         mutableStateListOf(
             Affirmation(1, "I am capable of achieving my goals", R.drawable.affirmation_card_01),
@@ -80,8 +77,6 @@ fun AffirmationSection() {
                 .padding(horizontal = 8.dp),
             contentAlignment = Alignment.Center
         ) {
-
-            // When all cards are removed
             if (affirmations.isEmpty()) {
                 Text(
                     text = "You've gone through all affirmations for today!",
@@ -91,12 +86,8 @@ fun AffirmationSection() {
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
-
-                // Show only top 3 cards with depth stack animation
                 affirmations.forEachIndexed { index, affirmation ->
-
                     if (index >= affirmations.size - 3) {
-
                         val stackIndex = affirmations.size - 1 - index
                         val isTopCard = index == affirmations.size - 1
 
@@ -130,10 +121,6 @@ fun AffirmationCard(
     modifier: Modifier = Modifier,
     onSwipe: () -> Unit
 ) {
-
-    // ------------------------------
-    // DRAG ANIMATION CONTROLLERS
-    // ------------------------------
     val coroutineScope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
     val offsetY = remember { Animatable(0f) }
@@ -142,68 +129,59 @@ fun AffirmationCard(
     val screenWidthPx =
         with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
 
-    val dismissThreshold = screenWidthPx * 0.4f
-
-    // If card is top one, enable drag/swipe gestures
     val cardModifier = if (isTopCard) {
         modifier.pointerInput(Unit) {
             detectDragGestures(
                 onDrag = { change, dragAmount ->
                     change.consume()
+                    val resistance = 0.65f
                     coroutineScope.launch {
-                        offsetX.snapTo(offsetX.value + dragAmount.x)
-                        offsetY.snapTo(offsetY.value + dragAmount.y)
-                        rotation.snapTo((offsetX.value / screenWidthPx) * 20f)
+                        val newX = offsetX.value + (dragAmount.x * resistance)
+                        val newY = offsetY.value + (dragAmount.y * resistance)
+                        offsetX.snapTo(newX.coerceIn(-screenWidthPx * 0.6f, screenWidthPx * 0.6f))
+                        offsetY.snapTo(newY.coerceIn(-150f, 150f))
+                        rotation.snapTo((offsetX.value / screenWidthPx) * 12f)
                     }
                 },
                 onDragEnd = {
                     coroutineScope.launch {
-
-                        val shouldDismiss = kotlin.math.abs(offsetX.value) > dismissThreshold
-
+                        val shouldDismiss =
+                            kotlin.math.abs(offsetX.value) > screenWidthPx * 0.20f
                         if (shouldDismiss) {
-                            // Animate off-screen
-                            val targetX = if (offsetX.value > 0)
-                                screenWidthPx * 1.5f else -screenWidthPx * 1.5f
-
+                            val targetX =
+                                if (offsetX.value > 0) screenWidthPx else -screenWidthPx
                             launch {
                                 offsetX.animateTo(
                                     targetValue = targetX,
-                                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                    animationSpec = tween(220, easing = FastOutSlowInEasing)
                                 )
                             }
                             launch {
                                 offsetY.animateTo(
-                                    targetValue = offsetY.value + 100f,
-                                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                    offsetY.value + 60f,
+                                    tween(220)
                                 )
                             }
                             launch {
                                 rotation.animateTo(
-                                    targetValue = if (offsetX.value > 0) 30f else -30f,
-                                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                    if (targetX > 0) 22f else -22f,
+                                    tween(220)
                                 )
                             }
-
-                            delay(300)
+                            delay(200)
                             onSwipe()
                         } else {
-                            // Animate back to original position
                             launch {
                                 offsetX.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
+                                    0f,
+                                    spring(
                                         dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessLow
+                                        stiffness = Spring.StiffnessMediumLow
                                     )
                                 )
                             }
-                            launch {
-                                offsetY.animateTo(0f, animationSpec = spring())
-                            }
-                            launch {
-                                rotation.animateTo(0f, animationSpec = spring())
-                            }
+                            launch { offsetY.animateTo(0f, spring()) }
+                            launch { rotation.animateTo(0f, spring()) }
                         }
                     }
                 }
@@ -211,9 +189,6 @@ fun AffirmationCard(
         }
     } else modifier
 
-    // ------------------------------
-    // CARD UI
-    // ------------------------------
     Box(
         modifier = cardModifier
             .offset(
@@ -230,16 +205,12 @@ fun AffirmationCard(
             )
             .clip(RoundedCornerShape(CornerLarge))
     ) {
-
-        // Background Image
         Image(
             painter = painterResource(id = affirmation.backgroundResId),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-
-        // Affirmation text
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -261,8 +232,6 @@ fun AffirmationCard(
                     )
                 )
             )
-
-
         }
     }
 }

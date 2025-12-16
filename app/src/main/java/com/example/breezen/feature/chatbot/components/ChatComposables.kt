@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOutQuart
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -62,17 +61,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.breezen.R
 import com.example.breezen.core.ui.components.BackButton
 import com.example.breezen.core.ui.theme.AppTypography
 import com.example.breezen.core.ui.theme.CornerCircle
@@ -174,24 +170,32 @@ internal fun TopHeader(
                         color = LightGreen,
                         style = AppTypography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = FunnelDisplayFamily
+                        fontFamily = FunnelDisplayFamily,
+                        modifier = Modifier.alignByBaseline()
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Icon(
-                        painter = painterResource(id = R.drawable.sparkles),
-                        contentDescription = null,
-                        tint = LightGreen,
-                        modifier = Modifier.size(18.dp)
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        text = "beta",
+                        color = LightGreen,
+                        style = AppTypography.titleSmall,
+                        fontFamily = FunnelDisplayFamily,
+                        modifier = Modifier.alignByBaseline()
                     )
+
                     Spacer(Modifier.width(8.dp))
+
                     val remaining = (5 - dailyCount).coerceAtLeast(0)
                     Text(
                         text = "|  $remaining left",
                         color = LightGreen,
                         style = AppTypography.titleMedium,
-                        fontFamily = FunnelDisplayFamily
+                        fontFamily = FunnelDisplayFamily,
+                        modifier = Modifier.alignByBaseline()
                     )
                 }
+
             }
         }
 
@@ -356,13 +360,10 @@ fun MessageBubble(
 
             if (sender == "AI") {
                 // ... (Avatar code remains similar, simplified for brevity) ...
-                val spin by rememberInfiniteTransition().animateFloat(
-                    initialValue = 0f, targetValue = 360f,
-                    animationSpec = infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Restart)
-                )
+
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.AutoAwesome, null, tint = DarkGreen, modifier = Modifier.size(18.dp).rotate(spin))
+                    Icon(Icons.Default.AutoAwesome, null, tint = DarkGreen, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Zeni", color = DarkGreen, style = AppTypography.titleMedium, fontFamily = FunnelDisplayFamily)
                 }

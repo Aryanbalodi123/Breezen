@@ -35,14 +35,6 @@ internal fun MusicScreenHeader(
     var isPressed by remember { mutableStateOf(false) }
 
     // Calculate scale animation based on press state
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "backButtonScale"
-    )
 
     // Fade-in animation for the header elements on entry
     val headerAlpha by animateFloatAsState(

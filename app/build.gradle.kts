@@ -18,7 +18,7 @@ android {
         minSdk = 31
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -53,8 +53,7 @@ android {
 
     buildTypes {
         debug {
-            // MAGIC IS HERE: Use the Release Key for Debugging
-            // This ensures the SHA-256 matches your C++ check while you dev.
+
             signingConfig = signingConfigs.getByName("release")
 
             isDebuggable = true
@@ -170,6 +169,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.places)
     implementation(libs.androidx.compose.ui.text)
+    implementation(libs.animation.core)
 
     // Testing
     testImplementation(libs.junit)
