@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.breezen.core.data.UserPreferences
 import com.example.breezen.core.network.AuthService
 import com.example.breezen.core.network.User
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -17,33 +17,47 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val user: State<User?> = _user
 
     init {
-        loadUser()
+        observeLocalUser()
+        syncRemoteUser()
     }
 
     /**
-     * Loads username from DataStore, then optionally syncs with Supabase.
-     * Keeps UI responsive even if network check fails.
+     * 1. Continuously listen to DataStore.
+     * Whenever a logout or signup happens elsewhere in the app,
+     * this block will trigger automatically and update the UI.
      */
-    private fun loadUser() {
+    private fun observeLocalUser() {
         viewModelScope.launch {
-
-            // Local username (fast load)
-            val localName = UserPreferences.getUsername(getApplication()).firstOrNull()
-            if (!localName.isNullOrEmpty()) {
-                _user.value = User(localName)
+            // Using collectLatest instead of firstOrNull ensures we keep listening
+            UserPreferences.getUsername(getApplication()).collectLatest { localName ->
+                if (!localName.isNullOrEmpty()) {
+                    _user.value = User(localName)
+                } else {
+                    // Optional: Handle the case where user is null (logged out state)
+                    _user.value = null
+                }
             }
+        }
+    }
 
-            // Remote profile sync (non-blocking, optional)
+    /**
+     * 2. Sync with Supabase/Backend once on load.
+     * If the remote data is different, we update DataStore.
+     * The update to DataStore will trigger the observer in step 1.
+     */
+    private fun syncRemoteUser() {
+        viewModelScope.launch {
             try {
                 val remoteUser = AuthService.getCurrentUser()
+                val currentLocalName = _user.value?.username
 
-                if (remoteUser != null && remoteUser.username != localName) {
-                    _user.value = remoteUser
+                if (remoteUser != null && remoteUser.username != currentLocalName) {
+                    // We simply save to preferences.
+                    // The observeLocalUser() function above will detect this change and update the UI.
                     UserPreferences.saveUsername(getApplication(), remoteUser.username)
                 }
-
             } catch (_: Exception) {
-                // Silent fallback — UI still works with local data
+                // Silent fallback
             }
         }
     }

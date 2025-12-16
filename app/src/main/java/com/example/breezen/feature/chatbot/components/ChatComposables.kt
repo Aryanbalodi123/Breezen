@@ -186,7 +186,7 @@ internal fun TopHeader(
 
                     Spacer(Modifier.width(8.dp))
 
-                    val remaining = (5 - dailyCount).coerceAtLeast(0)
+                    val remaining = (15 - dailyCount).coerceAtLeast(0)
                     Text(
                         text = "|  $remaining left",
                         color = LightGreen,
@@ -239,6 +239,9 @@ internal fun EmptyStateLarge(onSendPrompt: (String) -> Unit) {
                 fontFamily = FunnelDisplayFamily
             )
         }
+
+        // --- ADDED SPACE HERE ---
+        Spacer(Modifier.height(48.dp))
 
         Spacer(Modifier.weight(1f))
 
@@ -398,7 +401,7 @@ fun MessageBubble(
                     visible = showActions,
                     enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn()
                 ) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
                     ActionButtonsRow(onCopy = { onCopy(message) }, onShare = { onShare(message) }, onRegenerate = onRegenerate)
                 }
 
