@@ -42,12 +42,8 @@ data class CreditItem(val title: String, val author: String, val type: String)
 @Composable
 fun CreditsScreen(navController: NavController) {
     val credits = listOf(
-        CreditItem("Meditation UI", "Breeze Design", "Design"),
-        CreditItem("Rain Sounds", "Nature Pack", "Audio"),
-        CreditItem("Piano Flow", "Kevin MacLeod", "Music"),
-        CreditItem("Icons", "Material Symbols", "Assets"),
-        CreditItem("Font", "DM Sans", "Typography"),
-        CreditItem("Backend", "Supabase", "Infrastructure")
+        CreditItem("Music library", "BreakingCopyright Music", "Music"),
+
     )
 
     Column(
@@ -59,7 +55,7 @@ fun CreditsScreen(navController: NavController) {
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Vibes & Creators.",
+            text = "Credits",
             style = AppTypography.headlineMedium.copy(fontWeight = FontWeight.Bold),
             color = AppWhite
         )

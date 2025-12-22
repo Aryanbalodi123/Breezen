@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -91,31 +94,23 @@ import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 import kotlin.random.Random
 
-
-
-// ----------------- Models -----------------
 data class Language(val name: String, val color: Color)
 
 val myLanguages = listOf(
-    // Programming Languages
-    Language("Java", Color(0xFFFFCCBC)),       // Soft Terracotta
-    Language("C", Color(0xFFB0BEC5)),          // Mist Grey
-    Language("C++", Color(0xFF90CAF9)),        // Pastel Blue
-    Language("Python", Color(0xFFA5D6A7)),     // Soft Sage Green
-    Language("JavaScript", Color(0xFFFFF59D)), // Yellow Accent
-    Language("TypeScript", Color(0xFF9FA8DA)), // Periwinkle
-    Language("SQL", Color(0xFFEF9A9A)),        // Soft Coral
-
-    // Mobile
-    Language("Kotlin", Color(0xFFCE93D8)),     // Pastel Lavender
-    Language("Compose", Color(0xFF81D4FA)),    // Sky Blue
-
-    // Web & DB
-    Language("React", Color(0xFF80DEEA)),      // Soft Aqua
-    Language("Next.js", Color(0xFF546E7A)),    // Soft Slate
-    Language("Tailwind", Color(0xFF4DB6AC)),   // Muted Teal
-    Language("Flask", Color(0xFFA1887F)),      // Earthy Brown
-    Language("PostgresSQL", Color(0xFFC5E1A5)) // Matcha Green
+    Language("Java", Color(0xFFFFCCBC)),
+    Language("C", Color(0xFFB0BEC5)),
+    Language("C++", Color(0xFF90CAF9)),
+    Language("Python", Color(0xFFA5D6A7)),
+    Language("JavaScript", Color(0xFFFFF59D)),
+    Language("TypeScript", Color(0xFF9FA8DA)),
+    Language("SQL", Color(0xFFEF9A9A)),
+    Language("Kotlin", Color(0xFFCE93D8)),
+    Language("Compose", Color(0xFF81D4FA)),
+    Language("React", Color(0xFF80DEEA)),
+    Language("Next.js", Color(0xFF546E7A)),
+    Language("Tailwind", Color(0xFF4DB6AC)),
+    Language("Flask", Color(0xFFA1887F)),
+    Language("PostgresSQL", Color(0xFFC5E1A5))
 )
 
 data class Ball(
@@ -125,13 +120,12 @@ data class Ball(
     val radius: Float
 )
 
-@Composable
 @Preview
-fun DeveloperPreview(){
-    DeveloperProfileScreen(navController = rememberNavController() )
+@Composable
+fun DeveloperPreview() {
+    DeveloperProfileScreen(rememberNavController())
 }
 
-// ----------------- Screen -----------------
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun DeveloperProfileScreen(
@@ -142,23 +136,65 @@ fun DeveloperProfileScreen(
     var showDonateDialog by remember { mutableStateOf(false) }
     var showSkills by remember { mutableStateOf(false) }
 
+    // Professional entrance animations
+    val backgroundAlpha = remember { Animatable(0f) }
+    val contentAlpha = remember { Animatable(0f) }
+    val headerOffsetY = remember { Animatable(-40f) }
+    val imageScale = remember { Animatable(0.85f) }
+    val bottomSheetOffsetY = remember { Animatable(300f) }
+    val decorCircleScale = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch {
+            backgroundAlpha.animateTo(1f, tween(350))
+        }
+        launch {
+            delay(80)
+            decorCircleScale.animateTo(1f, tween(600, easing = FastOutSlowInEasing))
+        }
+        launch {
+            delay(120)
+            headerOffsetY.animateTo(0f, tween(500, easing = FastOutSlowInEasing))
+        }
+        launch {
+            delay(160)
+            imageScale.animateTo(1f, tween(550, easing = FastOutSlowInEasing))
+        }
+        launch {
+            delay(240)
+            bottomSheetOffsetY.animateTo(0f, tween(500, easing = FastOutSlowInEasing))
+        }
+        launch {
+            delay(400)
+            contentAlpha.animateTo(1f, tween(450))
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(colors = listOf(LightGreen, Color.White)))
+            .graphicsLayer {
+                alpha = backgroundAlpha.value
+            }
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(LightGreen, Color.White)
+                )
+            )
     ) {
-
-        // ================= HERO TOP ====================
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
-            // Decorative Circle
             Box(
                 modifier = Modifier
                     .offset((-60).dp, (-80).dp)
                     .size(300.dp)
+                    .graphicsLayer {
+                        scaleX = decorCircleScale.value
+                        scaleY = decorCircleScale.value
+                    }
                     .background(AccentGreen.copy(alpha = 0.1f), CircleShape)
             )
 
@@ -172,29 +208,31 @@ fun DeveloperProfileScreen(
                     modifier = Modifier
                         .padding(top = 16.dp)
                         .size(44.dp)
+                        .graphicsLayer {
+                            alpha = contentAlpha.value
+                        }
                         .shadow(4.dp)
                         .background(DarkGreen, RoundedCornerShape(10.dp))
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = YellowAccent)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = YellowAccent)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Box(modifier = Modifier.fillMaxWidth()) {
-
                     Column(
                         modifier = Modifier
                             .align(Alignment.TopStart)
+                            .graphicsLayer {
+                                translationY = headerOffsetY.value
+                                alpha = if (headerOffsetY.value > -20f) 1f else 0f
+                            }
                             .padding(top = 20.dp)
                             .zIndex(2f)
                     ) {
-                        // RENAMED: DecryptTextLine -> ConsoleRevealEffect
                         ConsoleRevealEffect("ARYAN", 48, DarkGreen, FontWeight.Black)
                         ConsoleRevealEffect("BALODI", 48, DarkGreen, FontWeight.Black)
-
                         Spacer(modifier = Modifier.height(12.dp))
-
-                        // RENAMED: LoveBox -> InfiniteLoopText
                         InfiniteLoopText()
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -205,12 +243,15 @@ fun DeveloperProfileScreen(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .offset(x = 80.dp ,y = -(50).dp)
+                            .offset(x = 80.dp, y = (-50).dp)
                             .fillMaxHeight(.55f)
                             .wrapContentWidth()
+                            .graphicsLayer {
+                                scaleX = imageScale.value
+                                scaleY = imageScale.value
+                            }
                             .zIndex(1f)
                     )
-
                 }
             }
         }
@@ -220,13 +261,14 @@ fun DeveloperProfileScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .fillMaxHeight(0.55f)
+                .graphicsLayer {
+                    translationY = bottomSheetOffsetY.value
+                }
                 .shadow(32.dp, RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp))
                 .background(DarkGreen, RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp))
                 .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // --- FIXED PILL AT TOP ---
             Box(
                 modifier = Modifier
                     .width(40.dp)
@@ -236,22 +278,22 @@ fun DeveloperProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // --- EVERYTHING ELSE SPACED EVENLY ---
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = contentAlpha.value
+                    },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceEvenly
             ) {
-
                 Text(
-                    text = "\" Building seamless mobile experiences with code and coffee.\" ",
+                    "\" Building seamless mobile experiences with code and coffee.\" ",
                     color = YellowAccent,
                     style = AppTypography.displayMedium,
-                    fontFamily = FunnelDisplayFamily,
-                    modifier = Modifier.fillMaxWidth()
+                    fontFamily = FunnelDisplayFamily
                 )
 
-                // RENAMED: ModernPillButton -> SkillNodeTrigger
                 SkillNodeTrigger("WHAT I KNOW", YellowAccent, DarkGreen) {
                     showSkills = true
                 }
@@ -260,12 +302,11 @@ fun DeveloperProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    // RENAMED: SocialIconBtn -> RepoLinkButton
                     RepoLinkButton(R.drawable.github, "GitHub") {
-                        openUrl(navController.context, "https://github.com")
+                        openUrl(navController.context, "https://github.com/Aryanbalodi123")
                     }
                     RepoLinkButton(R.drawable.linkedin, "LinkedIn") {
-                        openUrl(navController.context, "https://linkedin.com")
+                        openUrl(navController.context, "https://www.linkedin.com/in/aryan-balodi-522a6334b/")
                     }
                     RepoLinkButton(R.drawable.gmail, "Email") {
                         openEmail(navController.context)
@@ -276,7 +317,6 @@ fun DeveloperProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // RENAMED: ModernActionButton -> DashboardActionCard
                     DashboardActionCard(
                         "Feedback",
                         Icons.AutoMirrored.Rounded.Message,
@@ -294,36 +334,28 @@ fun DeveloperProfileScreen(
             }
         }
 
-        // ================ DIALOGS ===================
         if (showFeedbackDialog) {
             ModalOverlay {
-                FeedbackDialog(
-                    viewModel = viewModel,
-                    onDismiss = { showFeedbackDialog = false }
-                )
+                FeedbackDialog(viewModel) { showFeedbackDialog = false }
             }
         }
 
         if (showDonateDialog) {
             ModalOverlay {
-                // RENAMED: ModernDialog -> SystemOverlayDialog
                 SystemOverlayDialog(
-                    title = "Buy me a Coffee",
-                    message = "Thanks for supporting the work!",
-                    btnText = "Support",
-                    onDismiss = { showDonateDialog = false }
-                )
+                    "Buy me a Coffee",
+                    "Thanks for supporting the work!",
+                    "Support"
+                ) { showDonateDialog = false }
             }
         }
 
         if (showSkills) {
-            // RENAMED: PhysicsBallsOverlay -> PhysicsEngineOverlay
             PhysicsEngineOverlay(myLanguages) { showSkills = false }
         }
     }
 }
 
-// RENAMED from LoveBox (Sounds too romantic) -> InfiniteLoopText (Sounds technical)
 @Composable
 fun InfiniteLoopText() {
     val items = listOf(
@@ -331,7 +363,6 @@ fun InfiniteLoopText() {
         "Designing", "Innovating", "Coding", "Exploring",
         "Dreaming", "Growing", "Inspiring", "Inventing"
     )
-
     var index by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
@@ -341,77 +372,64 @@ fun InfiniteLoopText() {
         }
     }
 
-    Box {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-
-            Text(
-                text = "I love",
-                color = DarkGreen,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(DarkGreen)
-                    .padding(horizontal = 9.dp, vertical = 6.dp)
-            ){
-                AnimatedContent(
-                    targetState = index,
-                    transitionSpec = {
-                        slideInVertically { it } + fadeIn() togetherWith
-                                slideOutVertically { -it } + fadeOut()
-                    },
-                    label = "loop_anim"
-                ) { i ->
-                    Text(
-                        text = items[i],
-                        color = YellowAccent,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("I love", color = DarkGreen, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(7.dp))
+                .background(DarkGreen)
+                .padding(horizontal = 9.dp, vertical = 6.dp)
+        ) {
+            AnimatedContent(
+                targetState = index,
+                transitionSpec = {
+                    slideInVertically { it } + fadeIn() togetherWith
+                            slideOutVertically { -it } + fadeOut()
+                },
+                label = "loop"
+            ) {
+                Text(items[it], color = YellowAccent, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
-
-// ------------------- MODALS ----------------------------
-
 @Composable
-fun FeedbackDialog(
-    viewModel: SettingsViewModel,
-    onDismiss: () -> Unit
-) {
+fun FeedbackDialog(viewModel: SettingsViewModel, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
-    var sent by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    val dialogScale = remember { Animatable(0.85f) }
+    val dialogAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch { dialogScale.animateTo(1f, tween(300, easing = FastOutSlowInEasing)) }
+        launch { dialogAlpha.animateTo(1f, tween(250)) }
+    }
 
     Column(
         modifier = Modifier
             .width(330.dp)
+            .graphicsLayer {
+                scaleX = dialogScale.value
+                scaleY = dialogScale.value
+                alpha = dialogAlpha.value
+            }
             .clip(RoundedCornerShape(28.dp))
             .background(DarkGreen)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text("Send Feedback", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = YellowAccent)
-        Spacer(modifier = Modifier.height(12.dp))
-
+        Spacer(Modifier.height(12.dp))
         TextField(
             value = text,
             onValueChange = { text = it },
             placeholder = { Text("Write your feedback…", color = PureWhite.copy(0.5f)) },
             textStyle = LocalTextStyle.current.copy(color = PureWhite),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp),
+            modifier = Modifier.fillMaxWidth().height(140.dp),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color(0xFF1C3A2A),
                 unfocusedContainerColor = Color(0xFF1C3A2A),
@@ -420,100 +438,108 @@ fun FeedbackDialog(
                 unfocusedIndicatorColor = Color.Transparent
             )
         )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
+        Spacer(Modifier.height(18.dp))
         Button(
             onClick = {
                 if (text.isBlank()) return@Button
                 sending = true
                 scope.launch {
-                    val result = viewModel.sendUserFeedback(text)
-                    sending = false
-                    sent = result
-                    delay(1400)
+                    viewModel.sendUserFeedback(text)
+                    delay(1200)
                     onDismiss()
                 }
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = YellowAccent)
         ) {
-            Text(
-                when {
-                    sending -> "Sending…"
-                    sent -> "Sent!"
-                    else -> "Send"
-                },
-                color = DarkGreen
-            )
+            Text(if (sending) "Sending…" else "Send", color = DarkGreen)
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            "Cancel",
-            color = PureWhite.copy(0.8f),
-            modifier = Modifier.clickable { onDismiss() }
-        )
     }
 }
 
-// RENAMED from ModernDialog -> SystemOverlayDialog
 @Composable
 fun SystemOverlayDialog(title: String, message: String, btnText: String, onDismiss: () -> Unit) {
+    val dialogScale = remember { Animatable(0.85f) }
+    val dialogAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch { dialogScale.animateTo(1f, tween(300, easing = FastOutSlowInEasing)) }
+        launch { dialogAlpha.animateTo(1f, tween(250)) }
+    }
+
     Column(
         modifier = Modifier
             .width(320.dp)
+            .graphicsLayer {
+                scaleX = dialogScale.value
+                scaleY = dialogScale.value
+                alpha = dialogAlpha.value
+            }
             .clip(RoundedCornerShape(24.dp))
             .background(DarkGreen)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = YellowAccent)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
         Text(message, fontSize = 14.sp, color = PureWhite, textAlign = TextAlign.Center)
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(Modifier.height(20.dp))
         Button(
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = YellowAccent)
-        ) { Text(btnText, color = DarkGreen) }
+        ) {
+            Text(btnText, color = DarkGreen)
+        }
     }
 }
 
 @Composable
 fun ModalOverlay(content: @Composable () -> Unit) {
+    val overlayAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        overlayAlpha.animateTo(1f, tween(250))
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .zIndex(100f)
-            .background(Color.Black.copy(alpha = 0.6f))
-            .clickable(enabled = true, onClick = {}),
+            .graphicsLayer {
+                alpha = overlayAlpha.value
+            }
+            .background(Color.Black.copy(alpha = 0.6f)),
         contentAlignment = Alignment.Center
     ) {
         content()
     }
 }
 
-// --------------- Buttons & Icons --------------------
-
-// RENAMED from SocialIconBtn -> RepoLinkButton
 @Composable
 fun RepoLinkButton(icon: Int, label: String, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.bounceClick().clickable { onClick() }) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.bounceClick().clickable { onClick() }
+    ) {
         Box(
             modifier = Modifier
                 .size(50.dp)
                 .background(PureWhite.copy(alpha = 0.1f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(painter = painterResource(icon), null, tint = YellowAccent, modifier = Modifier.size(24.dp))
+            Icon(
+                painter = painterResource(icon),
+                null,
+                tint = YellowAccent,
+                modifier = Modifier.size(24.dp)
+            )
         }
         Spacer(Modifier.height(4.dp))
         Text(label, color = PureWhite.copy(alpha = 0.7f), fontSize = 10.sp)
     }
 }
 
-// RENAMED from ModernPillButton -> SkillNodeTrigger
 @Composable
 fun SkillNodeTrigger(text: String, backgroundColor: Color, textColor: Color, onClick: () -> Unit) {
     Box(
@@ -531,7 +557,6 @@ fun SkillNodeTrigger(text: String, backgroundColor: Color, textColor: Color, onC
     }
 }
 
-// RENAMED from ModernActionButton -> DashboardActionCard
 @Composable
 fun DashboardActionCard(
     text: String,
@@ -555,14 +580,11 @@ fun DashboardActionCard(
         horizontalArrangement = Arrangement.Center
     ) {
         Icon(icon, null, tint = contentColor, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(Modifier.width(10.dp))
         Text(text, color = contentColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }
 
-// ----------------- Decrypt Text Effect -----------------
-
-// RENAMED from DecryptTextLine -> ConsoleRevealEffect
 @Composable
 fun ConsoleRevealEffect(text: String, fontSize: Int, color: Color, fontWeight: FontWeight) {
     var display by remember { mutableStateOf("") }
@@ -573,9 +595,7 @@ fun ConsoleRevealEffect(text: String, fontSize: Int, color: Color, fontWeight: F
         for (i in text.indices) {
             delay(100)
             display = display.take(i) + text[i] +
-                    display.substring(i + 1)
-                        .map { chars.random() }
-                        .joinToString("")
+                    display.substring(i + 1).map { chars.random() }.joinToString("")
         }
         display = text
     }
@@ -589,21 +609,24 @@ fun ConsoleRevealEffect(text: String, fontSize: Int, color: Color, fontWeight: F
     )
 }
 
-// ----------------- OPTIMIZED PHYSICS OVERLAY -----------------
-
-// RENAMED from PhysicsBallsOverlay -> PhysicsEngineOverlay
 @Composable
 fun PhysicsEngineOverlay(languages: List<Language>, onDismiss: () -> Unit) {
+    val overlayAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        overlayAlpha.animateTo(1f, tween(250))
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .zIndex(100f)
-            .background(Color.Transparent)
+            .graphicsLayer {
+                alpha = overlayAlpha.value
+            }
     ) {
         val width = maxWidth.value
         val height = maxHeight.value
-
-        // DYNAMIC SIZING
         val minRadius = width * 0.11f
         val maxRadius = width * 0.16f
 
@@ -611,11 +634,11 @@ fun PhysicsEngineOverlay(languages: List<Language>, onDismiss: () -> Unit) {
             languages.mapIndexed { i, lang ->
                 Ball(
                     lang,
-                    x = width / 2 + (Random.nextFloat() - 0.5f) * (width * 0.5f),
-                    y = -height * 0.5f - i * (maxRadius * 2),
-                    vx = (Random.nextFloat() - 0.5f) * 50f,
-                    vy = 0f,
-                    radius = minRadius + Random.nextFloat() * (maxRadius - minRadius)
+                    width / 2 + (Random.nextFloat() - 0.5f) * (width * 0.4f),
+                    -height * 0.3f - i * (maxRadius * 2.2f),
+                    (Random.nextFloat() - 0.5f) * 40f,
+                    0f,
+                    minRadius + Random.nextFloat() * (maxRadius - minRadius)
                 )
             }.toMutableList()
         }
@@ -623,43 +646,41 @@ fun PhysicsEngineOverlay(languages: List<Language>, onDismiss: () -> Unit) {
         var trigger by remember { mutableLongStateOf(0L) }
 
         LaunchedEffect(Unit) {
-            val gravity = 1500f
-            val drag = 0.99f
+            val gravity = 1200f
+            val drag = 0.98f
             val dt = 0.016f
 
             while (isActive) {
-                // 1. Move
-                balls.forEach { b ->
-                    b.vy += gravity * dt
-                    b.vx *= drag
-                    b.vy *= drag
-                    b.x += b.vx * dt
-                    b.y += b.vy * dt
+                balls.forEach { ball ->
+                    ball.vy += gravity * dt
+                    ball.vx *= drag
+                    ball.vy *= drag
+                    ball.x += ball.vx * dt
+                    ball.y += ball.vy * dt
                 }
 
-                // 2. Solve Collisions
-                repeat(4) {
-                    // Wall Interactions
-                    balls.forEach { b ->
-                        if (b.y > height - b.radius) {
-                            b.y = height - b.radius
-                            b.vy *= -0.5f
-                            b.vx *= 0.9f
+                repeat(3) {
+                    balls.forEach { ball ->
+                        // Bottom boundary
+                        if (ball.y + ball.radius > height) {
+                            ball.y = height - ball.radius
+                            ball.vy *= -0.6f
                         }
-                        if (b.y < -height * 2) {
-                            b.y = -height
+
+                        // Left boundary
+                        if (ball.x - ball.radius < 0) {
+                            ball.x = ball.radius
+                            ball.vx *= -0.6f
                         }
-                        if (b.x < b.radius) {
-                            b.x = b.radius
-                            b.vx *= -0.6f
-                        }
-                        if (b.x > width - b.radius) {
-                            b.x = width - b.radius
-                            b.vx *= -0.6f
+
+                        // Right boundary
+                        if (ball.x + ball.radius > width) {
+                            ball.x = width - ball.radius
+                            ball.vx *= -0.6f
                         }
                     }
 
-                    // Ball-to-Ball Interactions
+                    // Ball collision
                     for (i in balls.indices) {
                         for (j in i + 1 until balls.size) {
                             val b1 = balls[i]
@@ -670,41 +691,30 @@ fun PhysicsEngineOverlay(languages: List<Language>, onDismiss: () -> Unit) {
                             val minDist = b1.radius + b2.radius
 
                             if (distSq < minDist * minDist) {
-                                val dist = sqrt(distSq)
-                                val currentDist = if (dist == 0f) 0.1f else dist
-                                val nx = dx / currentDist
-                                val ny = dy / currentDist
-                                val overlap = minDist - currentDist
+                                val dist = sqrt(distSq).coerceAtLeast(0.1f)
+                                val nx = dx / dist
+                                val ny = dy / dist
+                                val overlap = minDist - dist
 
-                                // Separate
                                 b1.x -= nx * overlap * 0.5f
-                                b1.y -= ny * overlap * 0.5f
                                 b2.x += nx * overlap * 0.5f
+                                b1.y -= ny * overlap * 0.5f
                                 b2.y += ny * overlap * 0.5f
 
-                                // Exchange Momentum
-                                val rvx = b2.vx - b1.vx
-                                val rvy = b2.vy - b1.vy
-                                val velAlongNormal = rvx * nx + rvy * ny
+                                val relVx = b2.vx - b1.vx
+                                val relVy = b2.vy - b1.vy
+                                val velAlongNormal = relVx * nx + relVy * ny
 
                                 if (velAlongNormal < 0) {
-                                    val restitution = 0.7f
-                                    val impulse = -(1 + restitution) * velAlongNormal
-                                    val impulseScale = impulse * 0.5f
-                                    b1.vx -= nx * impulseScale
-                                    b1.vy -= ny * impulseScale
-                                    b2.vx += nx * impulseScale
-                                    b2.vy += ny * impulseScale
+                                    val impulse = velAlongNormal * 0.8f
+                                    b1.vx += nx * impulse
+                                    b1.vy += ny * impulse
+                                    b2.vx -= nx * impulse
+                                    b2.vy -= ny * impulse
                                 }
                             }
                         }
                     }
-                }
-
-                // 3. Final Clamp
-                balls.forEach { b ->
-                    b.x = b.x.coerceIn(b.radius, width - b.radius)
-                    b.y = b.y.coerceAtMost(height - b.radius)
                 }
 
                 trigger++
@@ -712,47 +722,40 @@ fun PhysicsEngineOverlay(languages: List<Language>, onDismiss: () -> Unit) {
             }
         }
 
-        Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.85f))
+        ) {
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(24.dp)
-                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    .background(PureWhite.copy(alpha = 0.1f), CircleShape)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = null,
-                    tint = PureWhite,
-                    modifier = Modifier.size(32.dp)
-                )
+                Icon(Icons.Rounded.Close, null, tint = PureWhite)
             }
 
-            balls.forEach { b ->
-                key(b.language.name, trigger) {
+            balls.forEach { ball ->
+                key(ball.language.name, trigger) {
                     Box(
-                        contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .graphicsLayer {
-                                translationX = (b.x - b.radius).dp.toPx()
-                                translationY = (b.y - b.radius).dp.toPx()
+                                translationX = (ball.x - ball.radius).dp.toPx()
+                                translationY = (ball.y - ball.radius).dp.toPx()
                             }
-                            .size((b.radius * 2).dp)
-                            .shadow(6.dp, CircleShape)
-                            .background(b.language.color, CircleShape)
-                            .clickable {
-                                b.vy = -1200f
-                                b.vx = (Random.nextFloat() - 0.5f) * 1000f
-                            }
+                            .size((ball.radius * 2).dp)
+                            .shadow(8.dp, CircleShape)
+                            .background(ball.language.color, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        val isDark = b.language.name in listOf("Java", "Next.js", "C", "Flask")
                         Text(
-                            b.language.name,
-                            fontSize = (b.radius * 0.35f).sp,
+                            ball.language.name,
+                            fontSize = (ball.radius * 0.32f).sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) PureWhite else Color(0xFF0F291E),
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(4.dp)
+                            color = Color.Black.copy(alpha = 0.8f)
                         )
                     }
                 }
@@ -760,25 +763,32 @@ fun PhysicsEngineOverlay(languages: List<Language>, onDismiss: () -> Unit) {
         }
     }
 }
-// ----------------- Utils ------------------------
+
 fun Modifier.bounceClick() = composed {
     var pressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "scale")
-    this.graphicsLayer {
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = tween(100),
+        label = "bounce"
+    )
+    graphicsLayer {
         scaleX = scale
         scaleY = scale
-    }.pointerInput(Unit) {
-        awaitPointerEventScope {
-            while (true) {
-                awaitFirstDown(false)
-                waitForUpOrCancellation()
+    }
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    awaitFirstDown(false)
+                    pressed = true
+                    waitForUpOrCancellation()
+                    pressed = false
+                }
             }
         }
-    }
 }
 
 fun openEmail(context: Context) {
-    context.startActivity(Intent(Intent.ACTION_SENDTO, "mailto:your@email.com".toUri()))
+    context.startActivity(Intent(Intent.ACTION_SENDTO, "mailto:aryanb3244@gmail.com".toUri()))
 }
 
 fun openUrl(context: Context, url: String) {
