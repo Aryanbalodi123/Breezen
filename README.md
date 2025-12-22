@@ -64,30 +64,31 @@ breezen/
 │   ├── src/main/
 │   │   ├── java/com/example/breezen/
 │   │   │   ├── core/
-│   │   │   │   ├── data/              # DataStoreManager, Preferences
-│   │   │   │   ├── network/           # API clients (Gemini, Supabase)
+│   │   │   │   ├── data/              # DataStoreManager
+│   │   │   │   ├── network/           # API clients 
 │   │   │   │   └── ui/
 │   │   │   │       ├── components/    # Reusable Compose components
 │   │   │   │       ├── navigation/    # AppNavHost, Routes
-│   │   │   │       ├── theme/         # Material 3 theme system
-│   │   │   │       └── util/          # UI helpers, easing functions
-│   │   │   └── feature/
-│   │   │       ├── breathe/           # Breathing exercises
-│   │   │       ├── chatbot/           # AI chat + ChatViewModel
-│   │   │       ├── home/              # Dashboard + HomeViewModel
-│   │   │       ├── meditation/        # Guided sessions + player
-│   │   │       ├── music/             # Audio library + MusicViewModel
-│   │   │       ├── onboarding/        # Sign in/up flows
-│   │   │       ├── player/            # Audio player controls
-│   │   │       └── settings/          # App settings, credits
-│   │   ├── res/
-│   │   │   ├── drawable/              # Icons and images
-│   │   │   ├── font/                  # Custom fonts (DM Sans, Prata)
-│   │   │   ├── raw/                   # Lottie animations, audio
-│   │   │   └── values/                # Strings, colors, themes
-│   │   └── cpp/                       # Native C++ for security
+│   │   │   │       ├── theme/         # Theme system
+│   │   │   │       └── util/          # Helpers
+│   │   │   │ 
+│   │   │   └── feature/               # UI Screens
+│   │   │       ├── breathe/           
+│   │   │       ├── chatbot/           
+│   │   │       ├── home/             
+│   │   │       ├── meditation/        
+│   │   │       ├── music/             
+│   │   │       ├── onboarding/        
+│   │   │       ├── player/           
+│   │   │       └── settings/          
+│   │   ├── res/                        # Project assets
+│   │   │   ├── drawable/              
+│   │   │   ├── font/                 
+│   │   │   ├── raw/                   
+│   │   │   └── values/                
+│   │   └── cpp/                 
 │   │       ├── CMakeLists.txt
-│   │       └── keys.cpp               # Encrypted API keys
+│   │       └── keys.cpp               
 │   ├── build.gradle.kts
 │   └── google-services.json
 ├── gradle/
@@ -155,7 +156,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 For questions or feedback, reach out via:
 - Email: aryanb3244@gmail.com
-- GitHub: [@Aryanbalodi123](https://github.com/yourusername)
+- GitHub: [@Aryanbalodi123](https://github.com/Aryanbalodi123)
 
 ---
 
