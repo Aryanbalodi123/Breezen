@@ -100,9 +100,9 @@ breezen/
 
 ### For Users
 
-Download the latest APK directly from the [Releases](https://github.com/yourusername/breezen/releases) tab.
+Download the latest APK directly from the [Releases](https://github.com/Aryanbalodi123/breezen/releases) tab.
 
-[![Latest Release](https://img.shields.io/github/v/release/yourusername/breezen?style=flat-square&logo=android&color=3DDC84)](https://github.com/yourusername/breezen/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/Aryanbalodi123/breezen?style=flat-square&logo=android&color=3DDC84)](https://github.com/Aryanbalodi123/breezen/releases/latest)
 
 ### For Developers
 
@@ -117,7 +117,7 @@ Download the latest APK directly from the [Releases](https://github.com/youruser
 1. Fork the repository
 2. Clone your fork
 ```bash
-git clone https://github.com/YOUR_USERNAME/breezen.git
+git clone https://github.com/Aryanbalodi123/breezen.git
 cd breezen
 ```
 
